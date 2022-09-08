@@ -6,6 +6,9 @@
   "bin": {
     "divekit": "./build/index.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rimraf ./build && tsc",
     "lint": "eslint . --ext .ts",
