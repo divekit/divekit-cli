@@ -1,0 +1,37 @@
+name: Publish package to NPM
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Extract version
+        id: extract_version
+        uses: Saionaro/extract-package-version@v1.0.6
+      # From now, you can access the version via: ${{ steps.extract_version.outputs.version }}
+      - name: Validate version is NOT a beta version
+        if: ${{contains(steps.extract_version.outputs.version, 'beta')}}
+        uses: actions/github-script@v3
+        with:
+          script: core.setFailed('Version must not include beta tag!')
+      - name: Build package
+        run: npm ci # npm install but optimized for pipeline usage
+      - name: Publish to npm
+        id: publish
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+      - name: Validate version changed
+        if: steps.publish.outputs.type == 'none'
+        uses: actions/github-script@v3
+        with:
+          script: core.setFailed('Nothing published, bump version!')

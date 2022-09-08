@@ -1,6 +1,6 @@
 {
   "name": "@divekit/cli",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "CLI to simplify and orchestrate the usage of multiple divekit tools.",
   "main": "index.js",
   "bin": {
