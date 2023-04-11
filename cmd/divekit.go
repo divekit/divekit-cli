@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"divekit-cli/config"
+	"divekit-cli/utils"
 	"fmt"
+	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -26,19 +28,14 @@ var (
 		Long: `Divekit has been developed at TH Köln by the ArchiLab team (www.archi-lab.io) as
 universal tool to design, individualize, distribute, assess, patch, and evaluate
 realistic software engineering exercises as Git repos.`,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			DivekitHome = getHomeDir()
-			fmt.Println("Home directory:", DivekitHome)
-			OriginRepoFullPath = filepath.Join(DivekitHome, OriginRepoName)
-			DivekitDirFullPath = filepath.Join(OriginRepoFullPath, config.DIVEKIT_DIR_NAME)
-			DistributionsDirFullPath = filepath.Join(DivekitDirFullPath, config.DISTRIBUTIONS_DIR_NAME)
-		},
-		SilenceErrors: true,
-		SilenceUsage:  true,
+		PersistentPreRun: persistentPreRun,
+		SilenceErrors:    true,
+		SilenceUsage:     true,
 	}
 )
 
 func init() {
+	log.Debug("divekit.init()")
 	rootCmd.PersistentFlags().BoolVarP(&AsIf, "asif", "a", false,
 		"just tell what you would do, but don't do it yet")
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false,
@@ -47,6 +44,24 @@ func init() {
 		"name of the origin repo to work with")
 	rootCmd.PersistentFlags().StringVarP(&DivekitHome, "home", "m", "",
 		"home directory of all the Divekit repos")
+}
+
+func persistentPreRun(cmd *cobra.Command, args []string) {
+	log.Debug("divekit.persistentPreRun()")
+
+	DivekitHome = getHomeDir()
+	OriginRepoFullPath = filepath.Join(DivekitHome, OriginRepoName)
+	DivekitDirFullPath = filepath.Join(OriginRepoFullPath, config.DIVEKIT_DIR_NAME)
+	DistributionsDirFullPath = filepath.Join(DivekitDirFullPath, config.DISTRIBUTIONS_DIR_NAME)
+
+	utils.OutputAndAbortIfErrors(
+		utils.ValidateAllDirPaths(OriginRepoFullPath, DivekitDirFullPath, DistributionsDirFullPath))
+
+	log.WithFields(log.Fields{
+		"OriginRepoFullPath":       OriginRepoFullPath,
+		"DivekitDirFullPath":       DivekitDirFullPath,
+		"DistributionsDirFullPath": DistributionsDirFullPath,
+	}).Debug("Setting global variables")
 }
 
 // DivekitHome is the home directory of all the Divekit repos. It is set by the
