@@ -10,43 +10,57 @@ import (
 
 var (
 	// Flags
-	eachUser         bool
+	oneUserPerRun    bool
 	distributionName string
+	patchPath        string
+
+	// command state vars
+	patchFiles      []string
+	dirPathToLookIn string
 
 	patchCmd = &cobra.Command{
 		Use:   "patch",
 		Short: "Apply a patch to all repos",
 		Long:  `Patch one or several files in all the repos of a certain distribution of the origin repo`,
-		Args:  validateDirectory,
-		Run:   runPatch,
+		Args:  validateArgs,
+
+		Run: run,
 	}
 )
 
 func init() {
-	patchCmd.Flags().BoolVarP(&eachUser, "eachuser", "e", true,
+	patchCmd.Flags().BoolVarP(&oneUserPerRun, "oneuser", "1", true,
 		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
 	patchCmd.Flags().StringVarP(&distributionName, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
-	patchCmd.MarkFlagRequired("originrepo")
+	patchCmd.Flags().StringVarP(&patchPath, "patchpath", "p", "",
+		"directory patchPath within the origin repo containing the patch files (default: root)")
+	dirPathToLookIn = filepath.Join(OriginRepoFullPath, patchPath)
 
 	// Add the patch subcommand to the divekit command
 	rootCmd.AddCommand(patchCmd)
 }
 
 // Check if the directory exists and contains a ".divekit" subfolder
-func validateDirectory(cmd *cobra.Command, args []string) error {
+func validateArgs(cmd *cobra.Command, args []string) error {
+	var err error
 	if len(args) == 0 {
-		return fmt.Errorf("You need to specify at least one filename to patch.")
+		err = fmt.Errorf("You need to specify at least one filename to patch.")
 	}
-	err := utils.ValidateRepoPath(originRepoName, true)
+	/*
+		if OriginRepoFullPath == "" {
+			err = fmt.Errorf("You need to specify the origin repo with the -o / --originrepo flag.")
+		}
+		if err != nil {
+			utils.ValidateRepoPath(OriginRepoFullPath, true)
+		}
+	*/
 	return err
 }
 
-func runPatch(cmd *cobra.Command, args []string) {
-	repoDir := originRepoName
-	distributionsPath := filepath.Join(repoDir, ".divekit", "distributions")
+func run(cmd *cobra.Command, args []string) {
 	configFilename := fmt.Sprintf("%s.repositoryConfig.json", distributionName)
-	configFilePath := filepath.Join(distributionsPath, configFilename)
+	configFilePath := filepath.Join(DistributionsDirFullPath, configFilename)
 
 	_, err := os.Stat(configFilePath)
 	if os.IsNotExist(err) {
@@ -58,22 +72,29 @@ func runPatch(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	foundFiles, foundErr := utils.FindFiles(args[0], repoDir)
-	if foundErr != nil {
-		fmt.Fprintf(os.Stderr, "%s", foundErr)
-		os.Exit(1)
-	}
-	if len(foundFiles) == 0 {
-		fmt.Fprintf(os.Stderr, "No files found with name %s", args[0])
-		os.Exit(1)
-	}
-	if len(foundFiles) > 1 {
-		errorMsg := "Error: Multiple files found:\n"
-		for _, file := range foundFiles {
-			errorMsg += fmt.Sprintf("  - %s\n", file)
+	definePatchFiles(args)
+}
+
+func definePatchFiles(args []string) {
+	for index, _ := range args {
+		foundFiles, foundErr := utils.FindFiles(args[index], dirPathToLookIn)
+		if foundErr != nil {
+			fmt.Fprintf(os.Stderr, "%s", foundErr)
+			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "%s", errorMsg)
-		os.Exit(1)
+		if len(foundFiles) == 0 {
+			fmt.Fprintf(os.Stderr, "No files found with name %s", args[0])
+			os.Exit(1)
+		}
+		if len(foundFiles) > 1 {
+			errorMsg := "Error: Multiple files found:\n"
+			for _, file := range foundFiles {
+				errorMsg += fmt.Sprintf("  - %s\n", file)
+			}
+			fmt.Fprintf(os.Stderr, "%s", errorMsg)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stdout, "Found file: %s", foundFiles[0])
+		patchFiles[index] = foundFiles[0]
 	}
-	fmt.Fprintf(os.Stdout, "Found file: %s", foundFiles[0])
 }
