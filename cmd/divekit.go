@@ -1,13 +1,22 @@
 package cmd
 
 import (
-	"divekit-cli/config"
 	"divekit-cli/utils"
-	"fmt"
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+)
+
+const (
+	// ARS
+	ARS_REPO_NAME              = "divekit-automated-repo-setup"
+	REPOSITORY_CONFIG_FILENAME = "repositoryConfig.json"
+	REPOSITORY_CONFIG_DIR_NAME = "resources\\config"
+
+	// Origin repo
+	DIVEKIT_DIR_NAME       = ".divekit"
+	DISTRIBUTIONS_DIR_NAME = "distributions"
 )
 
 var (
@@ -18,9 +27,11 @@ var (
 	DivekitHome    string
 
 	// global vars
-	OriginRepoFullPath       string
-	DivekitDirFullPath       string
-	DistributionsDirFullPath string
+	OriginRepoFullPath              string
+	DivekitDirFullPath              string
+	DistributionsDirFullPath        string
+	ARSRepoFullPath                 string
+	ARSRepositoryConfigFileFullPath string
 
 	rootCmd = &cobra.Command{
 		Use:   "divekit",
@@ -51,16 +62,23 @@ func persistentPreRun(cmd *cobra.Command, args []string) {
 
 	DivekitHome = getHomeDir()
 	OriginRepoFullPath = filepath.Join(DivekitHome, OriginRepoName)
-	DivekitDirFullPath = filepath.Join(OriginRepoFullPath, config.DIVEKIT_DIR_NAME)
-	DistributionsDirFullPath = filepath.Join(DivekitDirFullPath, config.DISTRIBUTIONS_DIR_NAME)
+	DivekitDirFullPath = filepath.Join(OriginRepoFullPath, DIVEKIT_DIR_NAME)
+	DistributionsDirFullPath = filepath.Join(DivekitDirFullPath, DISTRIBUTIONS_DIR_NAME)
+	ARSRepoFullPath = filepath.Join(DivekitHome, ARS_REPO_NAME)
+	ARSRepositoryConfigFileFullPath =
+		filepath.Join(ARSRepoFullPath, REPOSITORY_CONFIG_DIR_NAME, REPOSITORY_CONFIG_FILENAME)
 
 	utils.OutputAndAbortIfErrors(
-		utils.ValidateAllDirPaths(OriginRepoFullPath, DivekitDirFullPath, DistributionsDirFullPath))
+		utils.ValidateAllDirPaths(OriginRepoFullPath, DivekitDirFullPath, DistributionsDirFullPath, ARSRepoFullPath))
+	utils.OutputAndAbortIfErrors(
+		utils.ValidateAllFilePaths(ARSRepositoryConfigFileFullPath))
 
 	log.WithFields(log.Fields{
-		"OriginRepoFullPath":       OriginRepoFullPath,
-		"DivekitDirFullPath":       DivekitDirFullPath,
-		"DistributionsDirFullPath": DistributionsDirFullPath,
+		"OriginRepoFullPath":              OriginRepoFullPath,
+		"DivekitDirFullPath":              DivekitDirFullPath,
+		"DistributionsDirFullPath":        DistributionsDirFullPath,
+		"ARSRepoFullPath":                 ARSRepoFullPath,
+		"ARSRepositoryConfigFileFullPath": ARSRepositoryConfigFileFullPath,
 	}).Debug("Setting global variables")
 }
 
@@ -79,18 +97,7 @@ func getHomeDir() string {
 	return workingDir
 }
 
-func ValidateOriginRepo() error {
-	_, err := os.Stat(OriginRepoFullPath)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("Origin repo does not exist (have you used the -o / --originrepo flag?): %s", OriginRepoFullPath)
-	}
-	_, err = os.Stat(DivekitDirFullPath)
-	if os.IsNotExist(err) {
-		return fmt.Errorf(".divekit subfolder not found in: %s", DivekitDirFullPath)
-	}
-	return nil
-}
-
 func Execute() error {
+	log.Debug("divekit.Execute()")
 	return rootCmd.Execute()
 }

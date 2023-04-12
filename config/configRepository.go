@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/apex/log"
 	"io/ioutil"
 	"os"
 )
@@ -46,6 +47,7 @@ type ConfigRepositoryType struct {
 var ConfigRepository ConfigRepositoryType
 
 func ReadConfigRepository(configFilePath string) error {
+	log.Debug("config.ReadConfigRepository()")
 	configFile, err := os.ReadFile(configFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
@@ -58,6 +60,7 @@ func ReadConfigRepository(configFilePath string) error {
 }
 
 func WriteConfigRepository(configFilePath string) error {
+	log.Debug("config.WriteConfigRepository()")
 	updatedConfig, err := json.MarshalIndent(ConfigRepository, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
