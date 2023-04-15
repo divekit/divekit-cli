@@ -1,6 +1,7 @@
 package config
 
 import (
+	"divekit-cli/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
@@ -56,6 +57,7 @@ func ReadConfigRepository(configFilePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
+	checkForDeathTraps()
 	return nil
 }
 
@@ -72,4 +74,15 @@ func WriteConfigRepository(configFilePath string) error {
 	}
 
 	return nil
+}
+
+func checkForDeathTraps() bool {
+	log.Debug("config.checkForDeathTraps()")
+	if !ConfigRepository.General.LocalMode && ConfigRepository.Remote.DeleteExistingRepositories {
+		utils.Confirm(
+			"Your repositoryConfig.json sets local mode to false, and sets \"deleteExistingRepositories\" \n" +
+				"to true. This means that you'll delete all repositories in the target group. \n" +
+				"Are you sure you want to do this?")
+	}
+	return true
 }

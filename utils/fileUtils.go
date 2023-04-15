@@ -29,6 +29,16 @@ func FindFiles(justTheFileName, rootDir string) ([]string, error) {
 	return targetPaths, nil
 }
 
+// Transforms an absolute path into a relative paths, relative to a given root
+func TransformIntoRelativePaths(root string, absPath string) (string, error) {
+	log.Debug("utils.TransformIntoRelativePaths() with root: " + root)
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil {
+		return "", err
+	}
+	return relPath, nil
+}
+
 // Check if a given file exists (and is a file)
 func ValidateFilePath(filePath string) error {
 	log.Debug("utils.ValidateFilePath()")

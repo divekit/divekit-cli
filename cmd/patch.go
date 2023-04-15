@@ -105,7 +105,13 @@ func definePatchFiles(args []string) {
 			os.Exit(1)
 		}
 		log.Debug(fmt.Sprintf("Found file %s", foundFiles[0]))
-		PatchFiles = append(PatchFiles, foundFiles[0])
+		relFile, err := utils.TransformIntoRelativePaths(OriginRepoFullPath, foundFiles[0])
+		log.Debug(fmt.Sprintf("... relative to origin repo: %s", relFile))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+			os.Exit(1)
+		}
+		PatchFiles = append(PatchFiles, relFile)
 	}
 }
 
@@ -143,6 +149,5 @@ func runLocalGeneration() {
 	if err != nil {
 		log.Fatalf("Error changing back to the original directory: %v", err)
 	}
-
-	fmt.Println("Execution completed.")
+	log.Info("Execution completed.")
 }

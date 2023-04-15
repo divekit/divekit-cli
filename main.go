@@ -9,8 +9,6 @@ import (
 )
 
 func main() {
-	//log.SetLevel(log.DebugLevel)
-	log.SetLevel(log.InfoLevel)
 	log.Debug("main()")
 	err := cmd.Execute()
 	if err != nil {
