@@ -11,12 +11,13 @@ import (
 
 type ConfigRepositoryType struct {
 	General struct {
-		LocalMode                     bool `json:"localMode"`
-		CreateTestRepository          bool `json:"createTestRepository"`
-		VariateRepositories           bool `json:"variateRepositories"`
-		DeleteSolution                bool `json:"deleteSolution"`
-		ActivateVariableValueWarnings bool `json:"activateVariableValueWarnings"`
-		MaxConcurrentWorkers          int  `json:"maxConcurrentWorkers"`
+		LocalMode                     bool   `json:"localMode"`
+		CreateTestRepository          bool   `json:"createTestRepository"`
+		VariateRepositories           bool   `json:"variateRepositories"`
+		DeleteSolution                bool   `json:"deleteSolution"`
+		ActivateVariableValueWarnings bool   `json:"activateVariableValueWarnings"`
+		MaxConcurrentWorkers          int    `json:"maxConcurrentWorkers"`
+		GlobalLogLevel                string `json:"globalLogLevel"`
 	} `json:"general"`
 	Repository struct {
 		RepositoryName    string     `json:"repositoryName"`

@@ -120,11 +120,13 @@ func setARSRepositoryConfig() {
 	config.ReadConfigRepository(RepositoryConfigFileFullPath)
 	config.ConfigRepository.Local.SubsetPaths = PatchFiles
 	config.ConfigRepository.General.LocalMode = true
+	config.ConfigRepository.General.GlobalLogLevel = utils.LogLevelAsString()
 	config.WriteConfigRepository(ARSRepositoryConfigFileFullPath)
 }
 
 func runLocalGeneration() {
 	log.Debug("patch.runLocalGeneration()")
+	log.Info("Starting local generation of the individualized repositories...")
 	// Store the original directory
 	originalDir, err := os.Getwd()
 	if err != nil {

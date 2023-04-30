@@ -18,6 +18,10 @@ const (
 	VeryVerbose
 )
 
+var (
+	LogLevel = log.InfoLevel
+)
+
 type CustomHandler struct {
 	mu sync.Mutex
 	w  io.Writer
@@ -47,10 +51,28 @@ func DefineLoggingConfig(verboseFlag bool, debugFlag bool) {
 	log.SetHandler(customHandler)
 	if verboseFlag {
 		log.SetLevel(log.InfoLevel)
+		LogLevel = log.InfoLevel
 	} else {
 		log.SetLevel(log.WarnLevel)
+		LogLevel = log.WarnLevel
 	}
 	if debugFlag {
 		log.SetLevel(log.DebugLevel)
+		LogLevel = log.DebugLevel
+	}
+}
+
+func LogLevelAsString() string {
+	switch LogLevel {
+	case log.DebugLevel:
+		return "debug"
+	case log.InfoLevel:
+		return "info"
+	case log.WarnLevel:
+		return "warning"
+	case log.ErrorLevel:
+		return "error"
+	default:
+		return "info"
 	}
 }
