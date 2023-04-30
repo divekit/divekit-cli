@@ -10,12 +10,13 @@ import (
 
 const (
 	// ARS
-	ARS_REPO_NAME              = "divekit-automated-repo-setup"
-	REPOSITORY_CONFIG_FILENAME = "repositoryConfig.json"
-	REPOSITORY_CONFIG_DIR_NAME = "resources\\config"
+	ARS_REPO_NAME                  = "divekit-automated-repo-setup"
+	ARS_REPOSITORY_CONFIG_FILENAME = "repositoryConfig.json"
+	ARS_CONFIG_DIR_NAME            = "resources\\config"
+	ARS_INDIVIDUAL_REPOSITORY_NAME = "resources\\individual_repositories"
 
 	// Origin repo
-	DIVEKIT_DIR_NAME       = ".divekit"
+	DIVEKIT_DIR_NAME       = ".divekit_norepo"
 	DISTRIBUTIONS_DIR_NAME = "distributions"
 )
 
@@ -30,9 +31,10 @@ var (
 	// global vars
 	OriginRepoFullPath              string
 	DivekitDirFullPath              string
-	DistributionsDirFullPath        string
+	DistributionsRootDirFullPath    string
 	ARSRepoFullPath                 string
 	ARSRepositoryConfigFileFullPath string
+	ARSIndividualRepoFullPath       string
 
 	rootCmd = &cobra.Command{
 		Use:   "divekit",
@@ -67,22 +69,25 @@ func persistentPreRun(cmd *cobra.Command, args []string) {
 	DivekitHome = getHomeDir()
 	OriginRepoFullPath = filepath.Join(DivekitHome, OriginRepoName)
 	DivekitDirFullPath = filepath.Join(OriginRepoFullPath, DIVEKIT_DIR_NAME)
-	DistributionsDirFullPath = filepath.Join(DivekitDirFullPath, DISTRIBUTIONS_DIR_NAME)
+	DistributionsRootDirFullPath = filepath.Join(DivekitDirFullPath, DISTRIBUTIONS_DIR_NAME)
 	ARSRepoFullPath = filepath.Join(DivekitHome, ARS_REPO_NAME)
 	ARSRepositoryConfigFileFullPath =
-		filepath.Join(ARSRepoFullPath, REPOSITORY_CONFIG_DIR_NAME, REPOSITORY_CONFIG_FILENAME)
+		filepath.Join(ARSRepoFullPath, ARS_CONFIG_DIR_NAME, ARS_REPOSITORY_CONFIG_FILENAME)
+	ARSIndividualRepoFullPath = filepath.Join(ARSRepoFullPath, ARS_INDIVIDUAL_REPOSITORY_NAME)
 
 	utils.OutputAndAbortIfErrors(
-		utils.ValidateAllDirPaths(OriginRepoFullPath, DivekitDirFullPath, DistributionsDirFullPath, ARSRepoFullPath))
+		utils.ValidateAllDirPaths(OriginRepoFullPath, DivekitDirFullPath, DistributionsRootDirFullPath, ARSRepoFullPath,
+			ARSIndividualRepoFullPath))
 	utils.OutputAndAbortIfErrors(
 		utils.ValidateAllFilePaths(ARSRepositoryConfigFileFullPath))
 
 	log.WithFields(log.Fields{
 		"OriginRepoFullPath":              OriginRepoFullPath,
 		"DivekitDirFullPath":              DivekitDirFullPath,
-		"DistributionsDirFullPath":        DistributionsDirFullPath,
+		"DistributionsRootDirFullPath":    DistributionsRootDirFullPath,
 		"ARSRepoFullPath":                 ARSRepoFullPath,
 		"ARSRepositoryConfigFileFullPath": ARSRepositoryConfigFileFullPath,
+		"ARSIndividualRepoFullPath":       ARSIndividualRepoFullPath,
 	}).Info("Setting global variables:")
 }
 

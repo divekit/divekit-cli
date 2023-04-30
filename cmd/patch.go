@@ -19,9 +19,11 @@ var (
 	PatchPath        string
 
 	// command state vars
-	PatchFiles                   []string
-	RootDirToLookForPatchFiles   string
-	RepositoryConfigFileFullPath string
+	PatchFiles                         []string
+	RootDirToLookForPatchFiles         string
+	RepositoryConfigFileFullPath       string
+	SpecificDistributionFullPath       string
+	SavedIndividualizationFileFullPath string
 
 	patchCmd = &cobra.Command{
 		Use:    "patch",
@@ -63,16 +65,18 @@ func preRun(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "%s", err)
 		os.Exit(1)
 	}
-	configFilename := fmt.Sprintf("%s.%s", DistributionName, REPOSITORY_CONFIG_FILENAME)
-	RepositoryConfigFileFullPath = filepath.Join(DistributionsDirFullPath, configFilename)
+	SpecificDistributionFullPath = filepath.Join(DistributionsRootDirFullPath, DistributionName)
+	RepositoryConfigFileFullPath = filepath.Join(SpecificDistributionFullPath, ARS_REPOSITORY_CONFIG_FILENAME)
 	RootDirToLookForPatchFiles = filepath.Join(OriginRepoFullPath, PatchPath)
 
 	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(RepositoryConfigFileFullPath))
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(RootDirToLookForPatchFiles))
+	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(SpecificDistributionFullPath, RootDirToLookForPatchFiles))
 
 	log.WithFields(log.Fields{
-		"RepositoryConfigFileFullPath": RepositoryConfigFileFullPath,
-		"RootDirToLookForPatchFiles":   RootDirToLookForPatchFiles,
+		"SpecificDistributionFullPath":       SpecificDistributionFullPath,
+		"RepositoryConfigFileFullPath":       RepositoryConfigFileFullPath,
+		"RootDirToLookForPatchFiles":         RootDirToLookForPatchFiles,
+		"SavedIndividualizationFileFullPath": SavedIndividualizationFileFullPath,
 	}).Debug("Setting patch variables")
 }
 
@@ -81,6 +85,7 @@ func run(cmd *cobra.Command, args []string) {
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
 	setARSRepositoryConfig()
+	copySavedIndividualizationFileToARS()
 	runLocalGeneration()
 }
 
@@ -122,6 +127,18 @@ func setARSRepositoryConfig() {
 	config.ConfigRepository.General.LocalMode = true
 	config.ConfigRepository.General.GlobalLogLevel = utils.LogLevelAsString()
 	config.WriteConfigRepository(ARSRepositoryConfigFileFullPath)
+}
+
+func copySavedIndividualizationFileToARS() {
+	log.Debug("patch.copySavedIndividualRepositoriesFileToARS()")
+	SavedIndividualizationFileFullPath = filepath.Join(SpecificDistributionFullPath,
+		config.ConfigRepository.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName)
+	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(SavedIndividualizationFileFullPath))
+
+	err := utils.CopyFile(SavedIndividualizationFileFullPath, ARSIndividualRepoFullPath)
+	if err != nil {
+		log.Fatalf("Error copying file %s to %s: %v", SavedIndividualizationFileFullPath, ARSIndividualRepoFullPath, err)
+	}
 }
 
 func runLocalGeneration() {

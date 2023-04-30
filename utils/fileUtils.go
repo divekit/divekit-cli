@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/apex/log"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -37,6 +38,33 @@ func TransformIntoRelativePaths(root string, absPath string) (string, error) {
 		return "", err
 	}
 	return relPath, nil
+}
+
+func CopyFile(srcFileName, destDirName string) error {
+	srcFile, err := os.Open(srcFileName)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	destFullPath := filepath.Join(destDirName, filepath.Base(srcFileName))
+	destFile, err := os.Create(destFullPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	err = destFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Check if a given file exists (and is a file)

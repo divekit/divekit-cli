@@ -36,5 +36,10 @@ see divekit.go
 
 ## Patch command
 
-
+As test data, I have used the following origin repo: 
+- st2-m0-origin (https://git.st.archi-lab.io/staff/st2/ss22/m0/st2-m0-origin)
+    - In the .divekit_norepo, the necessary files have been added
+    - There are two test files, one open and one hidden (test repo only). I have added a useless (but not 
+      confusing) individualized comment on top of the first test in each test file.
+   
 
