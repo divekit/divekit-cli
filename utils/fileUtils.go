@@ -58,12 +58,53 @@ func CopyFile(srcFileName, destDirName string) error {
 	if err != nil {
 		return err
 	}
-
 	err = destFile.Sync()
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func CopyAllFilesInDir(srcDirName, destDirName string) error {
+	srcInfo, err := os.Stat(srcDirName)
+	if err != nil {
+		return err
+	}
+
+	if srcInfo.IsDir() {
+		err = filepath.Walk(srcDirName, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				relPath, err := filepath.Rel(srcDirName, path)
+				if err != nil {
+					return err
+				}
+
+				dest := filepath.Join(destDirName, relPath)
+				err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
+				if err != nil {
+					return err
+				}
+
+				err = CopyFile(path, dest)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		dest := filepath.Join(destDirName, filepath.Base(srcDirName))
+		err = CopyFile(srcDirName, dest)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
