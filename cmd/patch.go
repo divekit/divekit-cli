@@ -14,16 +14,14 @@ import (
 
 var (
 	// Flags
-	OneUserPerRun    bool
-	DistributionName string
-	PatchPath        string
+	OneUserPerRunFlag    bool
+	DistributionNameFlag string
+	PatchPathFlag        string
 
 	// command state vars
-	PatchFiles                         []string
-	RootDirToLookForPatchFiles         string
-	RepositoryConfigFileFullPath       string
-	SpecificDistributionFullPath       string
-	SavedIndividualizationFileFullPath string
+	PatchFiles                []string
+	ARSRepo                   *config.ARSRepoType
+	RootDirToFilterPatchFiles string
 
 	patchCmd = &cobra.Command{
 		Use:    "patch",
@@ -37,18 +35,18 @@ var (
 
 func init() {
 	log.Debug("patch.init()")
-	patchCmd.Flags().BoolVarP(&OneUserPerRun, "oneuser", "1", true,
+	patchCmd.Flags().BoolVarP(&OneUserPerRunFlag, "oneuser", "1", true,
 		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
-	patchCmd.Flags().StringVarP(&DistributionName, "distribution", "d", "milestone",
+	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
-	patchCmd.Flags().StringVarP(&PatchPath, "patchpath", "p", "",
-		"directory PatchPath within the origin repo containing the patch files (default: root)")
+	patchCmd.Flags().StringVarP(&PatchPathFlag, "patchpath", "p", "",
+		"directory PatchPathFlag within the origin repo containing patch files (default: root)")
 
-	// Add the patch subcommand to the divekit command
+	patchCmd.MarkFlagRequired("distribution")
+	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(patchCmd)
 }
 
-// Check if the directory exists and contains a ".divekit" subfolder
 func validateArgs(cmd *cobra.Command, args []string) error {
 	log.Debug("patch.validateArgs()")
 	var err error
@@ -60,23 +58,19 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 
 // Checks preconditions before running the command
 func preRun(cmd *cobra.Command, args []string) {
-	if OriginRepoFullPath == "" {
-		err := fmt.Errorf("You need to specify the origin repo with the -o / --originrepo flag.")
-		fmt.Fprintf(os.Stderr, "%s", err)
-		os.Exit(1)
-	}
-	SpecificDistributionFullPath = filepath.Join(DistributionsRootDirFullPath, DistributionName)
-	RepositoryConfigFileFullPath = filepath.Join(SpecificDistributionFullPath, ARS_REPOSITORY_CONFIG_FILENAME)
-	RootDirToLookForPatchFiles = filepath.Join(OriginRepoFullPath, PatchPath)
+	ARSRepo = config.ARSRepo()
+	RootDirToFilterPatchFiles = filepath.Join(OriginRepo.RepoDir, PatchPathFlag)
+	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(RootDirToFilterPatchFiles))
 
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(RepositoryConfigFileFullPath))
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(SpecificDistributionFullPath, RootDirToLookForPatchFiles))
+	distribution := OriginRepo.GetDistribution(DistributionNameFlag)
+	if distribution == nil {
+		log.WithFields(log.Fields{
+			"DistributionNameFlag": DistributionNameFlag,
+		}).Fatal("Distribution not found")
+	}
 
 	log.WithFields(log.Fields{
-		"SpecificDistributionFullPath":       SpecificDistributionFullPath,
-		"RepositoryConfigFileFullPath":       RepositoryConfigFileFullPath,
-		"RootDirToLookForPatchFiles":         RootDirToLookForPatchFiles,
-		"SavedIndividualizationFileFullPath": SavedIndividualizationFileFullPath,
+		"RootDirToFilterPatchFiles": RootDirToFilterPatchFiles,
 	}).Debug("Setting patch variables")
 }
 
@@ -84,7 +78,7 @@ func run(cmd *cobra.Command, args []string) {
 	log.Debug("patch.run()")
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
-	setARSRepositoryConfig()
+	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
 	runLocalGeneration()
 }
@@ -92,12 +86,14 @@ func run(cmd *cobra.Command, args []string) {
 func definePatchFiles(args []string) {
 	log.Debug("patch.definePatchFiles()")
 	for index, _ := range args {
-		foundFiles, foundErr := utils.FindFiles(args[index], RootDirToLookForPatchFiles)
+		foundFiles, foundErr := utils.FindFiles(args[index], RootDirToFilterPatchFiles)
 		if foundErr != nil {
 			fmt.Fprintf(os.Stderr, "%s", foundErr)
 			os.Exit(1)
 		}
 		if len(foundFiles) == 0 {
+			// try again without the filter directory
+			foundFiles, foundErr = utils.FindFiles(args[index], OriginRepo.RepoDir)
 			fmt.Fprintf(os.Stderr, "No files found with name %s", args[index])
 			os.Exit(1)
 		}
@@ -110,7 +106,7 @@ func definePatchFiles(args []string) {
 			os.Exit(1)
 		}
 		log.Debug(fmt.Sprintf("Found file %s", foundFiles[0]))
-		relFile, err := utils.TransformIntoRelativePaths(OriginRepoFullPath, foundFiles[0])
+		relFile, err := utils.TransformIntoRelativePaths(OriginRepo.RepoDir, foundFiles[0])
 		log.Debug(fmt.Sprintf("... relative to origin repo: %s", relFile))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err)
@@ -120,24 +116,34 @@ func definePatchFiles(args []string) {
 	}
 }
 
-func setARSRepositoryConfig() {
-	log.Debug("patch.setARSRepositoryConfig()")
-	config.ReadConfigRepository(RepositoryConfigFileFullPath)
-	config.ConfigRepository.Local.SubsetPaths = PatchFiles
-	config.ConfigRepository.General.LocalMode = true
-	config.ConfigRepository.General.GlobalLogLevel = utils.LogLevelAsString()
-	config.WriteConfigRepository(ARSRepositoryConfigFileFullPath)
+func setRepositoryConfigWithinARSRepo() {
+	log.Debug("patch.setRepositoryConfigWithinARSRepo()")
+	distribution := OriginRepo.GetDistribution(DistributionNameFlag)
+	if distribution == nil {
+		log.WithFields(log.Fields{
+			"DistributionNameFlag": DistributionNameFlag,
+		}).Fatal("Distribution not found")
+		os.Exit(1)
+	}
+	repositoryConfigFile := distribution.RepositoryConfigFile
+	repositoryConfigFile.ReadContent()
+	repositoryConfigWithinARSRepo :=
+		repositoryConfigFile.CloneToDifferentLocation(ARSRepo.Config.RepositoryConfigFile.FilePath)
+	repositoryConfigWithinARSRepo.Content.Local.SubsetPaths = PatchFiles
+	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.UseSavedIndividualRepositories = true
+	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName =
+		OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFile
+	repositoryConfigWithinARSRepo.Content.General.LocalMode = true
+	repositoryConfigWithinARSRepo.Content.General.GlobalLogLevel = utils.LogLevelAsString()
+	repositoryConfigWithinARSRepo.WriteContent()
 }
 
 func copySavedIndividualizationFileToARS() {
 	log.Debug("patch.copySavedIndividualRepositoriesFileToARS()")
-	SavedIndividualizationFileFullPath = filepath.Join(SpecificDistributionFullPath,
-		config.ConfigRepository.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(SavedIndividualizationFileFullPath))
-
-	err := utils.CopyFile(SavedIndividualizationFileFullPath, ARSIndividualRepoFullPath)
+	err := utils.CopyFile(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFile,
+		ARSRepo.IndividualizationConfig.Dir)
 	if err != nil {
-		log.Fatalf("Error copying file %s to %s: %v", SavedIndividualizationFileFullPath, ARSIndividualRepoFullPath, err)
+		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)
 	}
 }
 
@@ -149,9 +155,9 @@ func runLocalGeneration() {
 	if err != nil {
 		log.Fatalf("Error getting current directory: %v", err)
 	}
-	err = os.Chdir(ARSRepoFullPath)
+	err = os.Chdir(ARSRepo.RepoDir)
 	if err != nil {
-		log.Fatalf("Error changing directory to %s: %v", ARSRepoFullPath, err)
+		log.Fatalf("Error changing directory to %s: %v", ARSRepo, err)
 	}
 
 	// Run "npm start"

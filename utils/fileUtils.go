@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Searches recursively for full path(es) of a given filename. Returns a 1-elem
@@ -166,4 +169,59 @@ func ValidateAllPaths(shouldBeDir bool, paths ...string) []error {
 		}
 	}
 	return errorsList
+}
+
+func FindUniqueFileWithPrefix(dir, prefix string) (string, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("Error reading directory: %v", err)
+	}
+
+	matchingFiles := []string{}
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), prefix) {
+			matchingFiles = append(matchingFiles, file.Name())
+		}
+	}
+
+	if len(matchingFiles) == 0 {
+		return "", fmt.Errorf("No file found with prefix '%s' in directory '%s'", prefix, dir)
+	}
+
+	if len(matchingFiles) > 1 {
+		return "", fmt.Errorf("Multiple files found with prefix '%s' in directory '%s'", prefix, dir)
+	}
+
+	return filepath.Join(dir, matchingFiles[0]), nil
+}
+
+func ListSubfolders(folderPath string) ([]string, error) {
+	files, err := ioutil.ReadDir(folderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	subfolders := make([]string, 0)
+
+	for _, file := range files {
+		if file.IsDir() {
+			subfolders = append(subfolders, filepath.Join(folderPath, file.Name()))
+		}
+	}
+
+	return subfolders, nil
+}
+
+func DeepCopy(srcObject, destinationObject interface{}) error {
+	jsonData, err := json.Marshal(srcObject)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonData, destinationObject)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

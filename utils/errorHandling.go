@@ -20,6 +20,15 @@ func OutputAndAbortIfErrors(errorsList []error) {
 	}
 }
 
+// Outputs an error to stderr, if there is one, and aborts the program if so
+func OutputAndAbortIfError(error error) {
+	log.Debug("utils.OutputAndAbortIfError()")
+	if error != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error: ", error)
+		os.Exit(1)
+	}
+}
+
 // Asks the user to confirm an action, and aborts if the user doesn't confirm
 func Confirm(prompt string) {
 	reader := bufio.NewReader(os.Stdin)
