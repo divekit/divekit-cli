@@ -5,7 +5,6 @@ package config
  */
 
 import (
-	"divekit-cli/cmd"
 	"divekit-cli/utils"
 	"github.com/apex/log"
 	"path/filepath"
@@ -21,16 +20,16 @@ type OriginRepoType struct {
 }
 
 type Distribution struct {
-	Dir                         string
-	RepositoryConfigFile        *RepositoryConfigFileType
-	IndividualizationConfigFile string
+	Dir                             string
+	RepositoryConfigFile            *RepositoryConfigFileType
+	IndividualizationConfigFileName string
 }
 
 // This method is similar to a constructor in OOP
 func OriginRepo(originRepoName string) *OriginRepoType {
 	log.Debug("config.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
-	originRepo.RepoDir = filepath.Join(DivekitHomeDir, cmd.OriginRepoNameFlag)
+	originRepo.RepoDir = filepath.Join(DivekitHomeDir, originRepoName)
 	originRepo.initDistributions()
 	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "arsConfig")
 	return originRepo
@@ -41,15 +40,17 @@ func (originRepo *OriginRepoType) GetDistribution(distributionName string) *Dist
 }
 
 func (originRepo *OriginRepoType) initDistributions() {
-	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo\\distribution")
-	distributionFolders, err := utils.ListSubfolders(distributionRootDir)
+	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo\\distributions")
+	originRepo.DistributionMap = make(map[string]*Distribution)
+	distributionFolders, err := utils.ListSubfolderNames(distributionRootDir)
 	utils.OutputAndAbortIfError(err)
 
 	for _, distributionName := range distributionFolders {
 		distributionFolder := filepath.Join(distributionRootDir, distributionName)
-		originRepo.DistributionMap[distributionName] = &Distribution{
+		newDistribution := Distribution{
 			Dir: distributionFolder,
 		}
+		originRepo.DistributionMap[distributionName] = &newDistribution
 		originRepo.initIndividualRepositoriesFile(distributionName, distributionFolder)
 		originRepo.initRepositorConfigFile(distributionName, distributionFolder)
 	}
@@ -65,7 +66,7 @@ func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionNam
 		distribution = &Distribution{}
 		originRepo.DistributionMap[distributionName] = distribution
 	}
-	distribution.IndividualizationConfigFile = individualRepositoriesFilePath
+	distribution.IndividualizationConfigFileName = individualRepositoriesFilePath
 }
 
 func (originRepo *OriginRepoType) initRepositorConfigFile(distributionName string, distributionFolder string) {

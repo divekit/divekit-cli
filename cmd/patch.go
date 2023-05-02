@@ -19,9 +19,8 @@ var (
 	PatchPathFlag        string
 
 	// command state vars
-	PatchFiles                []string
-	ARSRepo                   *config.ARSRepoType
-	RootDirToFilterPatchFiles string
+	PatchFiles []string
+	ARSRepo    *config.ARSRepoType
 
 	patchCmd = &cobra.Command{
 		Use:    "patch",
@@ -39,10 +38,7 @@ func init() {
 		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
-	patchCmd.Flags().StringVarP(&PatchPathFlag, "patchpath", "p", "",
-		"directory PatchPathFlag within the origin repo containing patch files (default: root)")
 
-	patchCmd.MarkFlagRequired("distribution")
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(patchCmd)
 }
@@ -59,8 +55,6 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 // Checks preconditions before running the command
 func preRun(cmd *cobra.Command, args []string) {
 	ARSRepo = config.ARSRepo()
-	RootDirToFilterPatchFiles = filepath.Join(OriginRepo.RepoDir, PatchPathFlag)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(RootDirToFilterPatchFiles))
 
 	distribution := OriginRepo.GetDistribution(DistributionNameFlag)
 	if distribution == nil {
@@ -68,10 +62,6 @@ func preRun(cmd *cobra.Command, args []string) {
 			"DistributionNameFlag": DistributionNameFlag,
 		}).Fatal("Distribution not found")
 	}
-
-	log.WithFields(log.Fields{
-		"RootDirToFilterPatchFiles": RootDirToFilterPatchFiles,
-	}).Debug("Setting patch variables")
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -85,15 +75,16 @@ func run(cmd *cobra.Command, args []string) {
 
 func definePatchFiles(args []string) {
 	log.Debug("patch.definePatchFiles()")
+	srcDir := filepath.Join(OriginRepo.RepoDir, "src")
 	for index, _ := range args {
-		foundFiles, foundErr := utils.FindFiles(args[index], RootDirToFilterPatchFiles)
-		if foundErr != nil {
-			fmt.Fprintf(os.Stderr, "%s", foundErr)
+		foundFiles, foundErr := utils.FindFilesInDir(args[index], OriginRepo.RepoDir)
+		foundFiles2, foundErr2 := utils.FindFilesInDirRecursively(args[index], srcDir)
+		foundFiles = append(foundFiles, foundFiles2...)
+		if foundErr != nil || foundErr2 != nil {
+			fmt.Fprintf(os.Stderr, "%s %s", foundErr, foundErr2)
 			os.Exit(1)
 		}
 		if len(foundFiles) == 0 {
-			// try again without the filter directory
-			foundFiles, foundErr = utils.FindFiles(args[index], OriginRepo.RepoDir)
 			fmt.Fprintf(os.Stderr, "No files found with name %s", args[index])
 			os.Exit(1)
 		}
@@ -131,8 +122,11 @@ func setRepositoryConfigWithinARSRepo() {
 		repositoryConfigFile.CloneToDifferentLocation(ARSRepo.Config.RepositoryConfigFile.FilePath)
 	repositoryConfigWithinARSRepo.Content.Local.SubsetPaths = PatchFiles
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.UseSavedIndividualRepositories = true
+
+	individualConfigFile :=
+		filepath.Base(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName)
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName =
-		OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFile
+		individualConfigFile
 	repositoryConfigWithinARSRepo.Content.General.LocalMode = true
 	repositoryConfigWithinARSRepo.Content.General.GlobalLogLevel = utils.LogLevelAsString()
 	repositoryConfigWithinARSRepo.WriteContent()
@@ -140,7 +134,7 @@ func setRepositoryConfigWithinARSRepo() {
 
 func copySavedIndividualizationFileToARS() {
 	log.Debug("patch.copySavedIndividualRepositoriesFileToARS()")
-	err := utils.CopyFile(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFile,
+	err := utils.CopyFile(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
 		ARSRepo.IndividualizationConfig.Dir)
 	if err != nil {
 		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)

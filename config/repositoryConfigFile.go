@@ -70,7 +70,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) ReadContent() error {
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
 	}
-	err = json.Unmarshal(configFile, repositoryConfigFile.Content)
+	err = json.Unmarshal(configFile, &repositoryConfigFile.Content)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}

@@ -13,8 +13,8 @@ import (
 
 // Searches recursively for full path(es) of a given filename. Returns a 1-elem
 // array if there is just one occurrence, or an array with several elements otherwise.
-func FindFiles(justTheFileName, rootDir string) ([]string, error) {
-	log.Debug("utils.FindFiles() - justTheFileName: " + justTheFileName + ", rootDir: " + rootDir)
+func FindFilesInDirRecursively(justTheFileName, rootDir string) ([]string, error) {
+	log.Debug("utils.FindFilesInDirRecursively() - justTheFileName: " + justTheFileName + ", rootDir: " + rootDir)
 	var targetPaths []string
 
 	err := filepath.Walk(rootDir, func(currentPath string, info os.FileInfo, err error) error {
@@ -31,6 +31,22 @@ func FindFiles(justTheFileName, rootDir string) ([]string, error) {
 		return nil, fmt.Errorf("Error searching for files: %v", err)
 	}
 	return targetPaths, nil
+}
+
+// same as FindFilesInDirRecursively, but without the recursive descent
+func FindFilesInDir(justTheFileName, rootDir string) ([]string, error) {
+	files, err := ioutil.ReadDir(rootDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %v", err)
+	}
+	filePaths := make([]string, 0)
+	for _, file := range files {
+		if !file.IsDir() && file.Name() == justTheFileName {
+			filePaths = append(filePaths, filepath.Join(rootDir, file.Name()))
+			break
+		}
+	}
+	return filePaths, nil
 }
 
 // Transforms an absolute path into a relative paths, relative to a given root
@@ -195,7 +211,7 @@ func FindUniqueFileWithPrefix(dir, prefix string) (string, error) {
 	return filepath.Join(dir, matchingFiles[0]), nil
 }
 
-func ListSubfolders(folderPath string) ([]string, error) {
+func ListSubfolderNames(folderPath string) ([]string, error) {
 	files, err := ioutil.ReadDir(folderPath)
 	if err != nil {
 		return nil, err
@@ -205,7 +221,7 @@ func ListSubfolders(folderPath string) ([]string, error) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			subfolders = append(subfolders, filepath.Join(folderPath, file.Name()))
+			subfolders = append(subfolders, file.Name())
 		}
 	}
 

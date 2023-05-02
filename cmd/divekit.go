@@ -47,7 +47,7 @@ func init() {
 func persistentPreRun(cmd *cobra.Command, args []string) {
 	utils.DefineLoggingConfig(VerboseFlag, DebugFlag)
 	log.Debug("divekit.persistentPreRun()")
-	config.InitDivekitHomeDir()
+	config.InitDivekitHomeDir(DivekitHomeFlag)
 	if OriginRepoNameFlag != "" {
 		OriginRepo = config.OriginRepo(OriginRepoNameFlag)
 	}

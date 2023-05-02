@@ -18,7 +18,8 @@ type ARSRepoType struct {
 		RepositoryConfigFile *RepositoryConfigFileType
 	}
 	IndividualizationConfig struct {
-		Dir string
+		Dir      string
+		FileName string
 	}
 	GeneratedOverviewFiles struct {
 		Dir string

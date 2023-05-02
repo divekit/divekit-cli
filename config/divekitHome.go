@@ -1,7 +1,6 @@
 package config
 
 import (
-	"divekit-cli/cmd"
 	"divekit-cli/utils"
 	"github.com/apex/log"
 	"os"
@@ -14,19 +13,19 @@ var (
 // cmd.DivekitHomeFlag is the home directory of all the Divekit repos. It is set by the
 // --home flag, the DIVEKIT_HOME environment variable, or the current working directory
 // (in this order).
-func InitDivekitHomeDir() {
+func InitDivekitHomeDir(divekitHomeFlag string) {
 	log.Debug("config.InitDivekitHomeDir()")
-	setDivekitHomeDirFromVariousSources()
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(DivekitHomeDir))
+	setDivekitHomeDirFromVariousSources(divekitHomeFlag)
+	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(DivekitHomeDir))
 	log.WithFields(log.Fields{
 		"DivekitHomeDir": DivekitHomeDir,
 	}).Info("Setting Divekit Home Dir:")
 }
 
-func setDivekitHomeDirFromVariousSources() {
-	if cmd.DivekitHomeFlag != "" {
-		log.Info("Home dir is set via flag -m / --home: " + cmd.DivekitHomeFlag)
-		DivekitHomeDir = cmd.DivekitHomeFlag
+func setDivekitHomeDirFromVariousSources(divekitHomeFlag string) {
+	if divekitHomeFlag != "" {
+		log.Info("Home dir is set via flag -m / --home: " + divekitHomeFlag)
+		DivekitHomeDir = divekitHomeFlag
 		return
 	}
 	envHome := os.Getenv("DIVEKIT_HOME")
