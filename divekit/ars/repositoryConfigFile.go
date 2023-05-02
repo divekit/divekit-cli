@@ -1,4 +1,4 @@
-package config
+package ars
 
 /**
  * This file an "object-oriented lookalike" implementation for the repositoryConfig.json file.
@@ -57,7 +57,7 @@ type RepositoryConfigFileType struct {
 
 // This method is similar to a constructor in OOP
 func RepositoryConfigFile(path string) *RepositoryConfigFileType {
-	log.Debug("config.repositoryConfigFile() - path: " + path)
+	log.Debug("ars.repositoryConfigFile() - path: " + path)
 	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
 	return &RepositoryConfigFileType{
 		FilePath: path,
@@ -65,7 +65,7 @@ func RepositoryConfigFile(path string) *RepositoryConfigFileType {
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) ReadContent() error {
-	log.Debug("config.ReadContent() - filePath: " + repositoryConfigFile.FilePath)
+	log.Debug("ars.ReadContent() - filePath: " + repositoryConfigFile.FilePath)
 	configFile, err := os.ReadFile(repositoryConfigFile.FilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %v", err)
@@ -79,7 +79,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) ReadContent() error {
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
-	log.Debug("config.WriteContent() - filePath: " + repositoryConfigFile.FilePath)
+	log.Debug("ars.WriteContent() - filePath: " + repositoryConfigFile.FilePath)
 	updatedConfig, err := json.MarshalIndent(repositoryConfigFile.Content, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
@@ -94,7 +94,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) CheckForDeathTraps() bool {
-	log.Debug("config.checkForDeathTraps() - filePath: " + repositoryConfigFile.FilePath)
+	log.Debug("ars.checkForDeathTraps() - filePath: " + repositoryConfigFile.FilePath)
 	if !repositoryConfigFile.Content.General.LocalMode && repositoryConfigFile.Content.Remote.DeleteExistingRepositories {
 		utils.Confirm(
 			"Your repositoryConfig.json sets local mode to false, and sets \"deleteExistingRepositories\" \n" +
@@ -105,12 +105,12 @@ func (repositoryConfigFile *RepositoryConfigFileType) CheckForDeathTraps() bool 
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) Clone() *RepositoryConfigFileType {
-	log.Debug("config.Clone() - filePath: " + repositoryConfigFile.FilePath)
+	log.Debug("ars.Clone() - filePath: " + repositoryConfigFile.FilePath)
 	return repositoryConfigFile.CloneToDifferentLocation(repositoryConfigFile.FilePath)
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) *RepositoryConfigFileType {
-	log.Debug("config.CloneToDifferentLocation() - newFilePath: " + newFilePath)
+	log.Debug("ars.CloneToDifferentLocation() - newFilePath: " + newFilePath)
 	newFile := RepositoryConfigFile(newFilePath)
 	utils.DeepCopy(repositoryConfigFile, newFile)
 	newFile.FilePath = newFilePath

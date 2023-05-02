@@ -1,10 +1,11 @@
-package config
+package ars
 
 /**
  * This file an "object-oriented lookalike" implementation for the structure of the ARS repository.
  */
 
 import (
+	"divekit-cli/divekit"
 	"divekit-cli/utils"
 	"github.com/apex/log"
 	"path/filepath"
@@ -31,9 +32,9 @@ type ARSRepoType struct {
 
 // This method is similar to a constructor in OOP
 func ARSRepo() *ARSRepoType {
-	log.Debug("config.ARSRepo()")
+	log.Debug("ars.ARSRepo()")
 	arsRepo := &ARSRepoType{}
-	arsRepo.RepoDir = filepath.Join(DivekitHomeDir, "divekit-automated-repo-setup")
+	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
 	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources\\config")
 	arsRepo.Config.RepositoryConfigFile =
 		RepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))

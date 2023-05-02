@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"divekit-cli/config"
+	"divekit-cli/divekit"
+	"divekit-cli/divekit/origin"
 	"divekit-cli/utils"
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ var (
 	DivekitHomeFlag    string
 
 	// global vars
-	OriginRepo *config.OriginRepoType
+	OriginRepo *origin.OriginRepoType
 
 	rootCmd = &cobra.Command{
 		Use:   "divekit",
@@ -47,9 +48,9 @@ func init() {
 func persistentPreRun(cmd *cobra.Command, args []string) {
 	utils.DefineLoggingConfig(VerboseFlag, DebugFlag)
 	log.Debug("divekit.persistentPreRun()")
-	config.InitDivekitHomeDir(DivekitHomeFlag)
+	divekit.InitDivekitHomeDir(DivekitHomeFlag)
 	if OriginRepoNameFlag != "" {
-		OriginRepo = config.OriginRepo(OriginRepoNameFlag)
+		OriginRepo = origin.OriginRepo(OriginRepoNameFlag)
 	}
 }
 

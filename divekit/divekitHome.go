@@ -1,4 +1,4 @@
-package config
+package divekit
 
 import (
 	"divekit-cli/utils"

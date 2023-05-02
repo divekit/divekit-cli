@@ -1,10 +1,12 @@
-package config
+package origin
 
 /**
  * This file an "object-oriented lookalike" implementation for the structure of the origin repository.
  */
 
 import (
+	"divekit-cli/divekit"
+	"divekit-cli/divekit/ars"
 	"divekit-cli/utils"
 	"github.com/apex/log"
 	"path/filepath"
@@ -21,25 +23,27 @@ type OriginRepoType struct {
 
 type Distribution struct {
 	Dir                             string
-	RepositoryConfigFile            *RepositoryConfigFileType
+	RepositoryConfigFile            *ars.RepositoryConfigFileType
 	IndividualizationConfigFileName string
 }
 
 // This method is similar to a constructor in OOP
 func OriginRepo(originRepoName string) *OriginRepoType {
-	log.Debug("config.InitOriginRepoPaths()")
+	log.Debug("origin.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
-	originRepo.RepoDir = filepath.Join(DivekitHomeDir, originRepoName)
+	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
 	originRepo.initDistributions()
 	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "arsConfig")
 	return originRepo
 }
 
 func (originRepo *OriginRepoType) GetDistribution(distributionName string) *Distribution {
+	log.Debug("origin.GetDistribution()")
 	return originRepo.DistributionMap[distributionName]
 }
 
 func (originRepo *OriginRepoType) initDistributions() {
+	log.Debug("origin.initDistributions()")
 	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo\\distributions")
 	originRepo.DistributionMap = make(map[string]*Distribution)
 	distributionFolders, err := utils.ListSubfolderNames(distributionRootDir)
@@ -57,6 +61,7 @@ func (originRepo *OriginRepoType) initDistributions() {
 }
 
 func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionName string, distributionFolder string) {
+	log.Debug("origin.initIndividualRepositoriesFile()")
 	individualRepositoriesFilePath, err :=
 		utils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
 	utils.OutputAndAbortIfError(err)
@@ -70,8 +75,9 @@ func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionNam
 }
 
 func (originRepo *OriginRepoType) initRepositorConfigFile(distributionName string, distributionFolder string) {
+	log.Debug("origin.initRepositorConfigFile()")
 	// filename for RepositoryConfigFile is fixed, must be "repositoryConfig.json"
-	repositoryConfigFile := RepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
+	repositoryConfigFile := ars.RepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist
