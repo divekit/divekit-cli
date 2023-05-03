@@ -10,14 +10,9 @@ import (
 
 var (
 	// Flags
-	AsIfFlag           bool
-	VerboseFlag        bool
-	DebugFlag          bool
-	OriginRepoNameFlag string
-	DivekitHomeFlag    string
-
-	// global vars
-	OriginRepo *origin.OriginRepoType
+	originRepoNameFlag string
+	logLevelFlag       string
+	divekitHomeFlag    string
 
 	rootCmd = &cobra.Command{
 		Use:   "divekit",
@@ -33,25 +28,21 @@ realistic software engineering exercises as Git repos.`,
 
 func init() {
 	log.Debug("divekit.init()")
-	rootCmd.PersistentFlags().BoolVarP(&AsIfFlag, "asif", "a", false,
+	rootCmd.PersistentFlags().BoolVarP(&utils.AsIfFlag, "asif", "a", false,
 		"just tell what you would do, but don't do it yet")
-	rootCmd.PersistentFlags().BoolVarP(&VerboseFlag, "verbose", "v", false,
-		"be extra chatty with all details of the execution")
-	rootCmd.PersistentFlags().BoolVarP(&DebugFlag, "debug", "g", false,
-		"debug mode, printing all debug and trace messages")
-	rootCmd.PersistentFlags().StringVarP(&OriginRepoNameFlag, "originrepo", "o", "",
+	rootCmd.PersistentFlags().StringVarP(&logLevelFlag, "loglevel", "l", "info",
+		"log level for the output (warn, info [default], debug, error)")
+	rootCmd.PersistentFlags().StringVarP(&originRepoNameFlag, "originrepo", "o", "",
 		"name of the origin repo to work with")
-	rootCmd.PersistentFlags().StringVarP(&DivekitHomeFlag, "home", "m", "",
+	rootCmd.PersistentFlags().StringVarP(&divekitHomeFlag, "home", "m", "",
 		"home directory of all the Divekit repos")
 }
 
 func persistentPreRun(cmd *cobra.Command, args []string) {
-	utils.DefineLoggingConfig(VerboseFlag, DebugFlag)
+	utils.DefineLoggingLevel(logLevelFlag)
 	log.Debug("divekit.persistentPreRun()")
-	divekit.InitDivekitHomeDir(DivekitHomeFlag)
-	if OriginRepoNameFlag != "" {
-		OriginRepo = origin.OriginRepo(OriginRepoNameFlag)
-	}
+	divekit.InitDivekitHomeDir(divekitHomeFlag)
+	origin.InitOriginRepo(originRepoNameFlag)
 }
 
 func Execute() error {

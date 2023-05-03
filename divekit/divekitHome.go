@@ -6,11 +6,12 @@ import (
 	"os"
 )
 
+// Global vars
 var (
 	DivekitHomeDir string
 )
 
-// cmd.DivekitHomeFlag is the home directory of all the Divekit repos. It is set by the
+// subcmd.DivekitHomeFlag is the home directory of all the Divekit repos. It is set by the
 // --home flag, the DIVEKIT_HOME environment variable, or the current working directory
 // (in this order).
 func InitDivekitHomeDir(divekitHomeFlag string) {

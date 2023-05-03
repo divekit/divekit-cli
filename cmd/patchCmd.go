@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"divekit-cli/divekit/ars"
+	"divekit-cli/divekit/origin"
 	"divekit-cli/divekit/patch"
 	"divekit-cli/utils"
 	"fmt"
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -35,7 +35,7 @@ var (
 )
 
 func init() {
-	log.Debug("cmd.init()")
+	log.Debug("subcmd.init()")
 	patchCmd.Flags().BoolVarP(&OneUserPerRunFlag, "oneuser", "1", true,
 		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
@@ -46,20 +46,20 @@ func init() {
 }
 
 func validateArgs(cmd *cobra.Command, args []string) error {
-	log.Debug("cmd.validateArgs()")
+	log.Debug("subcmd.validateArgs()")
 	var err error
 	if len(args) == 0 {
-		err = fmt.Errorf("You need to specify at least one filename to cmd.")
+		err = fmt.Errorf("You need to specify at least one filename to subcmd.")
 	}
 	return err
 }
 
 // Checks preconditions before running the command
 func preRun(cmd *cobra.Command, args []string) {
-	ARSRepo = ars.ARSRepo()
-	PatchRepo = patch.PatchRepo()
+	ARSRepo = ars.NewARSRepo()
+	PatchRepo = patch.NewPatchRepo()
 
-	distribution := OriginRepo.GetDistribution(DistributionNameFlag)
+	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	if distribution == nil {
 		log.WithFields(log.Fields{
 			"DistributionNameFlag": DistributionNameFlag,
@@ -68,21 +68,25 @@ func preRun(cmd *cobra.Command, args []string) {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	log.Debug("cmd.run()")
+	log.Debug("subcmd.run()")
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
+
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	runLocalGeneration()
+	utils.RunNPMStart(ARSRepo.RepoDir,
+		"Starting local generation of the individualized repositories containing patch files")
+
 	copyLocallyGeneratedFilesToPatchTool()
-	runPatchTool()
+	utils.RunNPMStart(PatchRepo.RepoDir,
+		"Actually patching the files to each repository")
 }
 
 func definePatchFiles(args []string) {
-	log.Debug("cmd.definePatchFiles()")
-	srcDir := filepath.Join(OriginRepo.RepoDir, "src")
+	log.Debug("subcmd.definePatchFiles()")
+	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
 	for index, _ := range args {
-		foundFiles, foundErr := utils.FindFilesInDir(args[index], OriginRepo.RepoDir)
+		foundFiles, foundErr := utils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
 		foundFiles2, foundErr2 := utils.FindFilesInDirRecursively(args[index], srcDir)
 		foundFiles = append(foundFiles, foundFiles2...)
 		if foundErr != nil || foundErr2 != nil {
@@ -102,7 +106,7 @@ func definePatchFiles(args []string) {
 			os.Exit(1)
 		}
 		log.Debug(fmt.Sprintf("Found file %s", foundFiles[0]))
-		relFile, err := utils.TransformIntoRelativePaths(OriginRepo.RepoDir, foundFiles[0])
+		relFile, err := utils.TransformIntoRelativePaths(origin.OriginRepo.RepoDir, foundFiles[0])
 		log.Debug(fmt.Sprintf("... relative to origin repo: %s", relFile))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err)
@@ -113,8 +117,8 @@ func definePatchFiles(args []string) {
 }
 
 func setRepositoryConfigWithinARSRepo() {
-	log.Debug("cmd.setRepositoryConfigWithinARSRepo()")
-	distribution := OriginRepo.GetDistribution(DistributionNameFlag)
+	log.Debug("subcmd.setRepositoryConfigWithinARSRepo()")
+	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	if distribution == nil {
 		log.WithFields(log.Fields{
 			"DistributionNameFlag": DistributionNameFlag,
@@ -129,7 +133,7 @@ func setRepositoryConfigWithinARSRepo() {
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.UseSavedIndividualRepositories = true
 
 	individualConfigFile :=
-		filepath.Base(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName)
+		filepath.Base(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName)
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName =
 		individualConfigFile
 	repositoryConfigWithinARSRepo.Content.General.LocalMode = true
@@ -138,46 +142,16 @@ func setRepositoryConfigWithinARSRepo() {
 }
 
 func copySavedIndividualizationFileToARS() {
-	log.Debug("cmd.copySavedIndividualRepositoriesFileToARS()")
-	err := utils.CopyFile(OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
+	log.Debug("subcmd.copySavedIndividualRepositoriesFileToARS()")
+	err := utils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
 		ARSRepo.IndividualizationConfig.Dir)
 	if err != nil {
 		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)
 	}
 }
 
-func runLocalGeneration() {
-	log.Debug("cmd.runLocalGeneration()")
-	log.Info("Starting local generation of the individualized repositories...")
-	// Store the original directory
-	originalDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting current directory: %v", err)
-	}
-	err = os.Chdir(ARSRepo.RepoDir)
-	if err != nil {
-		log.Fatalf("Error changing directory to %s: %v", ARSRepo.RepoDir, err)
-	}
-
-	// Run "npm start"
-	cmd := exec.Command("npm", "start")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("Error running 'npm start': %v", err)
-	}
-
-	// Change back to the original directory
-	err = os.Chdir(originalDir)
-	if err != nil {
-		log.Fatalf("Error changing back to the original directory: %v", err)
-	}
-	log.Info("Execution completed.")
-}
-
 func copyLocallyGeneratedFilesToPatchTool() {
-	log.Debug("cmd.copyLocallyGeneratedFilesToPatchTool()")
+	log.Debug("subcmd.copyLocallyGeneratedFilesToPatchTool()")
 	log.Info("Copying locally generated files to patch tool...")
 	// Copy the generated files to the patch tool
 	err := PatchRepo.CleanInputDir()
@@ -189,34 +163,4 @@ func copyLocallyGeneratedFilesToPatchTool() {
 		os.Exit(1)
 	}
 	log.Info("Copying completed.")
-}
-
-func runPatchTool() {
-	log.Debug("cmd.runPatchTool()")
-	log.Info("Starting patch process ...")
-	// Store the original directory
-	originalDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting current directory: %v", err)
-	}
-	err = os.Chdir(PatchRepo.RepoDir)
-	if err != nil {
-		log.Fatalf("Error changing directory to %s: %v", ARSRepo.RepoDir, err)
-	}
-
-	// Run "npm start"
-	cmd := exec.Command("npm", "start")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("Error running 'npm start': %v", err)
-	}
-
-	// Change back to the original directory
-	err = os.Chdir(originalDir)
-	if err != nil {
-		log.Fatalf("Error changing back to the original directory: %v", err)
-	}
-	log.Info("Execution completed.")
 }

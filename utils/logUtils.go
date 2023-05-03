@@ -32,7 +32,7 @@ func (h *CustomHandler) HandleLog(e *log.Entry) error {
 	defer h.mu.Unlock()
 
 	// Format the log message
-	msg := fmt.Sprintf("[%s] %s\n", cases.Title(language.Dutch).String(fmt.Sprintf("%s", e.Level)), e.Message)
+	msg := fmt.Sprintf("[%s] %s\n", cases.Title(language.English).String(fmt.Sprintf("%s", e.Level)), e.Message)
 
 	// Write the formatted message to the output writer
 	_, err := h.w.Write([]byte(msg))
@@ -45,21 +45,14 @@ func NewCustomHandler(w io.Writer) *CustomHandler {
 	}
 }
 
-func DefineLoggingConfig(verboseFlag bool, debugFlag bool) {
+func DefineLoggingLevel(logLevelString string) error {
 	// Create and set the custom handler
 	customHandler := NewCustomHandler(os.Stdout)
 	log.SetHandler(customHandler)
-	if verboseFlag {
-		log.SetLevel(log.InfoLevel)
-		LogLevel = log.InfoLevel
-	} else {
-		log.SetLevel(log.WarnLevel)
-		LogLevel = log.WarnLevel
-	}
-	if debugFlag {
-		log.SetLevel(log.DebugLevel)
-		LogLevel = log.DebugLevel
-	}
+	var err error = nil
+	LogLevel, err = StringAsLogLevel(logLevelString)
+	log.Info("Log level set to " + LogLevelAsString() + ".")
+	return err
 }
 
 func LogLevelAsString() string {
@@ -74,5 +67,20 @@ func LogLevelAsString() string {
 		return "error"
 	default:
 		return "info"
+	}
+}
+
+func StringAsLogLevel(levelStr string) (log.Level, error) {
+	switch levelStr {
+	case "debug":
+		return log.DebugLevel, nil
+	case "info":
+		return log.InfoLevel, nil
+	case "warning":
+		return log.WarnLevel, nil
+	case "error":
+		return log.ErrorLevel, nil
+	default:
+		return log.InfoLevel, fmt.Errorf("Invalid log level string: %s", levelStr)
 	}
 }

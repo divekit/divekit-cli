@@ -27,12 +27,12 @@ type PatchConfigFileType struct {
 }
 
 // This method is similar to a constructor in OOP
-func PatchConfigFile(path string) *PatchConfigFileType {
+func NewPatchConfigFile(path string) *PatchConfigFileType {
 	log.Debug("patch.patchConfigFile() - path: " + path)
 	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
 	log.WithFields(log.Fields{
 		"PatchConfigFileType.FilePath": path,
-	}).Info("Setting PatchConfigFile variables:")
+	}).Info("Setting NewPatchConfigFile variables:")
 	return &PatchConfigFileType{
 		FilePath: path,
 	}

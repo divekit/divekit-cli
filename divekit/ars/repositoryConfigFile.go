@@ -56,7 +56,7 @@ type RepositoryConfigFileType struct {
 }
 
 // This method is similar to a constructor in OOP
-func RepositoryConfigFile(path string) *RepositoryConfigFileType {
+func NewRepositoryConfigFile(path string) *RepositoryConfigFileType {
 	log.Debug("ars.repositoryConfigFile() - path: " + path)
 	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
 	return &RepositoryConfigFileType{
@@ -111,7 +111,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) Clone() *RepositoryConfigF
 
 func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) *RepositoryConfigFileType {
 	log.Debug("ars.CloneToDifferentLocation() - newFilePath: " + newFilePath)
-	newFile := RepositoryConfigFile(newFilePath)
+	newFile := NewRepositoryConfigFile(newFilePath)
 	utils.DeepCopy(repositoryConfigFile, newFile)
 	newFile.FilePath = newFilePath
 	return newFile

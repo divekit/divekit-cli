@@ -31,13 +31,13 @@ type ARSRepoType struct {
 }
 
 // This method is similar to a constructor in OOP
-func ARSRepo() *ARSRepoType {
-	log.Debug("ars.ARSRepo()")
+func NewARSRepo() *ARSRepoType {
+	log.Debug("ars.NewARSRepo()")
 	arsRepo := &ARSRepoType{}
 	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
 	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources\\config")
 	arsRepo.Config.RepositoryConfigFile =
-		RepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
+		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
 	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources\\individual_repositories")
 	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources\\overview")
 	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources\\test\\output")
@@ -48,7 +48,7 @@ func ARSRepo() *ARSRepoType {
 	log.WithFields(log.Fields{
 		"RepoDir":                      arsRepo.RepoDir,
 		"ConfigDir":                    arsRepo.Config.Dir,
-		"RepositoryConfigFile":         arsRepo.Config.RepositoryConfigFile,
+		"NewRepositoryConfigFile":      arsRepo.Config.RepositoryConfigFile,
 		"IndividualizationConfigDir":   arsRepo.IndividualizationConfig.Dir,
 		"GeneratedOverviewFilesDir":    arsRepo.GeneratedOverviewFiles.Dir,
 		"GeneratedLocalOutputFilesDir": arsRepo.GeneratedLocalOutput.Dir,

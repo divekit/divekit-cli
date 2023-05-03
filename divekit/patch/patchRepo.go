@@ -21,12 +21,12 @@ type PatchRepoType struct {
 }
 
 // This method is similar to a constructor in OOP
-func PatchRepo() *PatchRepoType {
-	log.Debug("patch.PatchRepo()")
+func NewPatchRepo() *PatchRepoType {
+	log.Debug("patch.NewPatchRepo()")
 	patchRepo := &PatchRepoType{}
 	patchRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-repo-editor")
 	patchConfigFileName := filepath.Join(patchRepo.RepoDir, "build\\main\\config\\editorConfig.json")
-	patchRepo.PatchConfigFile = PatchConfigFile(patchConfigFileName)
+	patchRepo.PatchConfigFile = NewPatchConfigFile(patchConfigFileName)
 	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets\\input")
 
 	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(patchRepo.RepoDir, patchRepo.InputDir))

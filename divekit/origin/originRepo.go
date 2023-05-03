@@ -12,6 +12,11 @@ import (
 	"path/filepath"
 )
 
+// global variable for the origin repository
+var (
+	OriginRepo *OriginRepoType
+)
+
 // all the relevant paths in the origin repository (all as full paths)
 type OriginRepoType struct {
 	RepoDir         string
@@ -28,13 +33,22 @@ type Distribution struct {
 }
 
 // This method is similar to a constructor in OOP
-func OriginRepo(originRepoName string) *OriginRepoType {
+func NewOriginRepo(originRepoName string) *OriginRepoType {
 	log.Debug("origin.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
 	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
+	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(originRepo.RepoDir))
+
 	originRepo.initDistributions()
-	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "arsConfig")
+	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")
+	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(originRepo.ARSConfig.Dir))
 	return originRepo
+}
+
+func InitOriginRepo(originRepoNameFlag string) {
+	if originRepoNameFlag != "" {
+		OriginRepo = NewOriginRepo(originRepoNameFlag)
+	}
 }
 
 func (originRepo *OriginRepoType) GetDistribution(distributionName string) *Distribution {
@@ -76,8 +90,8 @@ func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionNam
 
 func (originRepo *OriginRepoType) initRepositorConfigFile(distributionName string, distributionFolder string) {
 	log.Debug("origin.initRepositorConfigFile()")
-	// filename for RepositoryConfigFile is fixed, must be "repositoryConfig.json"
-	repositoryConfigFile := ars.RepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
+	// filename for NewRepositoryConfigFile is fixed, must be "repositoryConfig.json"
+	repositoryConfigFile := ars.NewRepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist
