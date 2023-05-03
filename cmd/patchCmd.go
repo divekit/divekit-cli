@@ -78,6 +78,8 @@ func run(cmd *cobra.Command, args []string) {
 		"Starting local generation of the individualized repositories containing patch files")
 
 	copyLocallyGeneratedFilesToPatchTool()
+	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
+	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
 	utils.RunNPMStart(PatchRepo.RepoDir,
 		"Actually patching the files to each repository")
 }

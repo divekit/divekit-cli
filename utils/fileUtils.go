@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/apex/log"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -85,46 +86,40 @@ func CopyFile(srcFileName, destDirName string) error {
 }
 
 func CopyAllFilesInDir(srcDirName, destDirName string) error {
-	srcInfo, err := os.Stat(srcDirName)
-	if err != nil {
-		return err
-	}
-
-	if srcInfo.IsDir() {
-		err = filepath.Walk(srcDirName, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() {
-				relPath, err := filepath.Rel(srcDirName, path)
-				if err != nil {
-					return err
-				}
-
-				dest := filepath.Join(destDirName, relPath)
-				err = os.MkdirAll(filepath.Dir(dest), os.ModePerm)
-				if err != nil {
-					return err
-				}
-
-				err = CopyFile(path, dest)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+	return filepath.Walk(srcDirName, func(srcPath string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to access path %s: %v", srcPath, err)
 		}
-	} else {
-		dest := filepath.Join(destDirName, filepath.Base(srcDirName))
-		err = CopyFile(srcDirName, dest)
+
+		relPath, err := filepath.Rel(srcDirName, srcPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get relative path for %s: %v", srcPath, err)
 		}
-	}
-	return nil
+
+		destPath := filepath.Join(destDirName, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(destPath, info.Mode())
+		}
+
+		srcFile, err := os.Open(srcPath)
+		if err != nil {
+			return fmt.Errorf("failed to open source file %s: %v", srcPath, err)
+		}
+		defer srcFile.Close()
+
+		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode())
+		if err != nil {
+			return fmt.Errorf("failed to create destination file %s: %v", destPath, err)
+		}
+		defer destFile.Close()
+
+		if _, err := io.Copy(destFile, srcFile); err != nil {
+			return fmt.Errorf("failed to copy file content from %s to %s: %v", srcPath, destPath, err)
+		}
+
+		return nil
+	})
 }
 
 // Check if a given file exists (and is a file)

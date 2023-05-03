@@ -6,6 +6,7 @@ package patch
 
 import (
 	"divekit-cli/divekit"
+	"divekit-cli/divekit/ars"
 	"divekit-cli/utils"
 	"fmt"
 	"github.com/apex/log"
@@ -25,7 +26,7 @@ func NewPatchRepo() *PatchRepoType {
 	log.Debug("patch.NewPatchRepo()")
 	patchRepo := &PatchRepoType{}
 	patchRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-repo-editor")
-	patchConfigFileName := filepath.Join(patchRepo.RepoDir, "build\\main\\config\\editorConfig.json")
+	patchConfigFileName := filepath.Join(patchRepo.RepoDir, "src\\main\\config\\editorConfig.json")
 	patchRepo.PatchConfigFile = NewPatchConfigFile(patchConfigFileName)
 	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets\\input")
 
@@ -51,4 +52,16 @@ func (patchRepo *PatchRepoType) CleanInputDir() error {
 		return errTest
 	}
 	return nil
+}
+
+func (patchRepo *PatchRepoType) UpdatePatchConfigFile(repositoryConfigFile *ars.RepositoryConfigFileType) error {
+	log.Debug("patch.UpdatePatchConfigFile()")
+	patchConfigFile := patchRepo.PatchConfigFile
+	err := patchConfigFile.UpdateFromRepositoryConfigFile(repositoryConfigFile)
+	if err != nil {
+		log.Errorf("Error in patch.UpdatePatchConfigFile():", err)
+		return err
+	}
+	err = patchConfigFile.WriteContent()
+	return err
 }

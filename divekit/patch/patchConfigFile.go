@@ -6,12 +6,14 @@ package patch
  */
 
 import (
+	"divekit-cli/divekit/ars"
 	"divekit-cli/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 // struct for the editorConfig.json file
@@ -36,6 +38,21 @@ func NewPatchConfigFile(path string) *PatchConfigFileType {
 	return &PatchConfigFileType{
 		FilePath: path,
 	}
+}
+
+func (patchConfigFile *PatchConfigFileType) UpdateFromRepositoryConfigFile(repositoryConfigFile *ars.RepositoryConfigFileType) error {
+	log.Debug("patch.UpdateFromRepositoryConfigFile() - repositoryConfigFile: " + repositoryConfigFile.FilePath)
+	patchConfigFile.Content.OnlyUpdateTestProjects = false
+	patchConfigFile.Content.OnlyUpdateCodeProjects = false
+	patchConfigFile.Content.GroupIds = make([]int, 2)
+	patchConfigFile.Content.GroupIds[0] = repositoryConfigFile.Content.Remote.CodeRepositoryTargetGroupId
+	patchConfigFile.Content.GroupIds[1] = repositoryConfigFile.Content.Remote.TestRepositoryTargetGroupId
+	patchConfigFile.Content.LogLevel = utils.LogLevelAsString()
+	currentTime := time.Now()
+	formattedTime := currentTime.Format("02.01.2006 15:04")
+	patchConfigFile.Content.CommitMsg = "Patch applied on " + formattedTime
+	err := patchConfigFile.WriteContent()
+	return err
 }
 
 func (patchConfigFile *PatchConfigFileType) ReadContent() error {

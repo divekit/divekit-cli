@@ -19,7 +19,7 @@ func RunNPMStart(dirPath, infoMsg string) error {
 	log.Debug("utils.RunNPMStartInDir(): dirPath = " + dirPath)
 	log.Info(infoMsg + " by running 'npm start' in " + dirPath + ".")
 	if AsIfFlag {
-		log.Info("'As if' flag set, therefore SKIP RUNNIMG 'npm start'.")
+		log.Info("'As if' flag set, therefore SKIP RUNNING 'npm start'.")
 		return nil
 	}
 	// Store the original directory
