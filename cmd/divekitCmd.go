@@ -31,7 +31,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&utils.AsIfFlag, "asif", "a", false,
 		"just tell what you would do, but don't do it yet")
 	rootCmd.PersistentFlags().StringVarP(&logLevelFlag, "loglevel", "l", "info",
-		"log level for the output (warn, info [default], debug, error)")
+		"log level (warn, info, debug, error)")
 	rootCmd.PersistentFlags().StringVarP(&originRepoNameFlag, "originrepo", "o", "",
 		"name of the origin repo to work with")
 	rootCmd.PersistentFlags().StringVarP(&divekitHomeFlag, "home", "m", "",

@@ -26,9 +26,9 @@ func NewPatchRepo() *PatchRepoType {
 	log.Debug("patch.NewPatchRepo()")
 	patchRepo := &PatchRepoType{}
 	patchRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-repo-editor")
-	patchConfigFileName := filepath.Join(patchRepo.RepoDir, "src\\main\\config\\editorConfig.json")
+	patchConfigFileName := filepath.Join(patchRepo.RepoDir, "src/main/config/editorConfig.json")
 	patchRepo.PatchConfigFile = NewPatchConfigFile(patchConfigFileName)
-	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets\\input")
+	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets/input")
 
 	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(patchRepo.RepoDir, patchRepo.InputDir))
 	log.WithFields(log.Fields{

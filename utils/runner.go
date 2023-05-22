@@ -22,29 +22,16 @@ func RunNPMStart(dirPath, infoMsg string) error {
 		log.Info("'As if' flag set, therefore SKIP RUNNING 'npm start'.")
 		return nil
 	}
-	// Store the original directory
-	originalDir, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting current directory: %v", err)
-	}
-	err = os.Chdir(dirPath)
-	if err != nil {
-		log.Fatalf("Error changing directory to %s: %v", dirPath, err)
-	}
 
 	// Run "npm start"
 	cmd := exec.Command("npm", "start")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	cmd.Dir = dirPath
+	err := cmd.Run()
 	if err != nil {
 		log.Fatalf("Error running 'npm start': %v", err)
 	}
 
-	// Change back to the original directory
-	err = os.Chdir(originalDir)
-	if err != nil {
-		log.Fatalf("Error changing back to the original directory: %v", err)
-	}
 	return err
 }

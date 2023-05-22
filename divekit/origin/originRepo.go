@@ -58,7 +58,7 @@ func (originRepo *OriginRepoType) GetDistribution(distributionName string) *Dist
 
 func (originRepo *OriginRepoType) initDistributions() {
 	log.Debug("origin.initDistributions()")
-	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo\\distributions")
+	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo/distributions")
 	originRepo.DistributionMap = make(map[string]*Distribution)
 	distributionFolders, err := utils.ListSubfolderNames(distributionRootDir)
 	utils.OutputAndAbortIfError(err)

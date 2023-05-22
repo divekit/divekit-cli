@@ -36,6 +36,7 @@ func FindFilesInDirRecursively(justTheFileName, rootDir string) ([]string, error
 
 // same as FindFilesInDirRecursively, but without the recursive descent
 func FindFilesInDir(justTheFileName, rootDir string) ([]string, error) {
+	log.Debug("utils.FindFilesInDir() - justTheFileName: " + justTheFileName + ", rootDir: " + rootDir)
 	files, err := ioutil.ReadDir(rootDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory: %v", err)

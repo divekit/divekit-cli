@@ -35,12 +35,12 @@ func NewARSRepo() *ARSRepoType {
 	log.Debug("ars.NewARSRepo()")
 	arsRepo := &ARSRepoType{}
 	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
-	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources\\config")
+	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources/config")
 	arsRepo.Config.RepositoryConfigFile =
 		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
-	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources\\individual_repositories")
-	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources\\overview")
-	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources\\test\\output")
+	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources/individual_repositories")
+	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources/overview")
+	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/test/output")
 
 	utils.OutputAndAbortIfErrors(
 		utils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
