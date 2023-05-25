@@ -15,10 +15,7 @@ import (
 
 var (
 	// Flags
-	OneUserPerRunFlag    bool
 	DistributionNameFlag string
-	PatchPathFlag        string
-
 	// command state vars
 	PatchFiles []string
 	ARSRepo    *ars.ARSRepoType
@@ -35,9 +32,7 @@ var (
 )
 
 func init() {
-	log.Debug("subcmd.init()")
-	patchCmd.Flags().BoolVarP(&OneUserPerRunFlag, "oneuser", "1", true,
-		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
+	log.Debug("patch.init()")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
 
@@ -74,20 +69,19 @@ func run(cmd *cobra.Command, args []string) {
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	utils.RunNPMStart(ARSRepo.RepoDir,
+	utils.RunNPMStartAlways(ARSRepo.RepoDir,
 		"Starting local generation of the individualized repositories containing patch files")
 
 	copyLocallyGeneratedFilesToPatchTool()
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-	utils.RunNPMStart(PatchRepo.RepoDir,
-		"Actually patching the files to each repository")
+	utils.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
 }
 
 func definePatchFiles(args []string) {
 	log.Debug("subcmd.definePatchFiles()")
 	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
-	for index, _ := range args {
+	for index := range args {
 		foundFiles, foundErr := utils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
 		foundFiles2, foundErr2 := utils.FindFilesInDirRecursively(args[index], srcDir)
 		foundFiles = append(foundFiles, foundFiles2...)

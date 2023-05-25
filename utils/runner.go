@@ -12,14 +12,22 @@ import (
 
 // Global flags
 var (
-	AsIfFlag bool // If true, then don't actually run the commands, just output what would be run
+	DryRunFlag bool // If true, then don't actually run the commands, just output what would be run
 )
 
+func RunNPMStartAlways(dirPath, infoMsg string) error {
+	return runNPMStartWithDryRunCheck(dirPath, infoMsg, false)
+}
+
 func RunNPMStart(dirPath, infoMsg string) error {
+	return runNPMStartWithDryRunCheck(dirPath, infoMsg, true)
+}
+
+func runNPMStartWithDryRunCheck(dirPath, infoMsg string, skipIfDryRun bool) error {
 	log.Debug("utils.RunNPMStartInDir(): dirPath = " + dirPath)
 	log.Info(infoMsg + " by running 'npm start' in " + dirPath + ".")
-	if AsIfFlag {
-		log.Info("'As if' flag set, therefore SKIP RUNNING 'npm start'.")
+	if skipIfDryRun && DryRunFlag {
+		log.Info("'Dry Run' flag set, therefore SKIP RUNNING 'npm start'.")
 		return nil
 	}
 
