@@ -33,8 +33,16 @@ But there may be more distributions. Distributions are stored in `.divekit\distr
 ## Global Flags
 
 see divekit.go
+(FIXME more elaborate description)
 
-## Patch command
+## Development of the "patch" subcommand - how to test
 
+(this is just temporary during development, will be removed later)
 
+As test data, I have used the following origin repo: 
+- st2-m0-origin (https://git.st.archi-lab.io/staff/st2/ss22/m0/st2-m0-origin)
+    - In the .divekit_norepo, the necessary files have been added
+    - There are two test files, one open and one hidden (test repo only). I have added a useless (but not 
+      confusing) individualized comment on top of the first test in each test file.
+   
 

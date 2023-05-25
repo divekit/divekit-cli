@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"github.com/divekit/divekit-cli"
 	"divekit-cli/cmd"
 	"fmt"
 	"github.com/apex/log"
