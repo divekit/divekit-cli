@@ -12,13 +12,13 @@ import (
 
 // Global flags
 var (
-	AsIfFlag bool // If true, then don't actually run the commands, just output what would be run
+	DryRunFlag bool // If true, then don't actually run the commands, just output what would be run
 )
 
 func RunNPMStart(dirPath, infoMsg string) error {
 	log.Debug("utils.RunNPMStartInDir(): dirPath = " + dirPath)
 	log.Info(infoMsg + " by running 'npm start' in " + dirPath + ".")
-	if AsIfFlag {
+	if DryRunFlag {
 		log.Info("'As if' flag set, therefore SKIP RUNNING 'npm start'.")
 		return nil
 	}

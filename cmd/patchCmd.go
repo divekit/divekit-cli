@@ -15,10 +15,8 @@ import (
 
 var (
 	// Flags
-	OneUserPerRunFlag    bool
 	DistributionNameFlag string
-	PatchPathFlag        string
-
+	OnlyGenerateFlag     bool
 	// command state vars
 	PatchFiles []string
 	ARSRepo    *ars.ARSRepoType
@@ -35,11 +33,11 @@ var (
 )
 
 func init() {
-	log.Debug("subcmd.init()")
-	patchCmd.Flags().BoolVarP(&OneUserPerRunFlag, "oneuser", "1", true,
-		"users in the repo distribution are patched one-by-one, in order to avoid memory overflow")
+	log.Debug("patch.init()")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
+	patchCmd.Flags().BoolVarP(&OnlyGenerateFlag, "only-generate", "1", false,
+		"only generate the patch files locally, but don't move them to the student repos yet")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(patchCmd)
@@ -65,6 +63,11 @@ func preRun(cmd *cobra.Command, args []string) {
 			"DistributionNameFlag": DistributionNameFlag,
 		}).Fatal("Distribution not found")
 	}
+
+	if utils.DryRunFlag && OnlyGenerateFlag {
+		log.Warn("Running in dry-run mode - this overrides the --just-generate flag")
+		OnlyGenerateFlag = false
+	}
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -77,17 +80,21 @@ func run(cmd *cobra.Command, args []string) {
 	utils.RunNPMStart(ARSRepo.RepoDir,
 		"Starting local generation of the individualized repositories containing patch files")
 
-	copyLocallyGeneratedFilesToPatchTool()
-	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
-	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-	utils.RunNPMStart(PatchRepo.RepoDir,
-		"Actually patching the files to each repository")
+	if !OnlyGenerateFlag {
+		copyLocallyGeneratedFilesToPatchTool()
+		distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
+		PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
+		utils.RunNPMStart(PatchRepo.RepoDir,
+			"Actually patching the files to each repository")
+	} else {
+		log.Info("Skipping patching of the student repositories")
+	}
 }
 
 func definePatchFiles(args []string) {
 	log.Debug("subcmd.definePatchFiles()")
 	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
-	for index, _ := range args {
+	for index := range args {
 		foundFiles, foundErr := utils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
 		foundFiles2, foundErr2 := utils.FindFilesInDirRecursively(args[index], srcDir)
 		foundFiles = append(foundFiles, foundFiles2...)
