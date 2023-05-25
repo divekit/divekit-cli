@@ -16,7 +16,6 @@ import (
 var (
 	// Flags
 	DistributionNameFlag string
-	OnlyGenerateFlag     bool
 	// command state vars
 	PatchFiles []string
 	ARSRepo    *ars.ARSRepoType
@@ -36,8 +35,6 @@ func init() {
 	log.Debug("patch.init()")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
-	patchCmd.Flags().BoolVarP(&OnlyGenerateFlag, "only-generate", "1", false,
-		"only generate the patch files locally, but don't move them to the student repos yet")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(patchCmd)
@@ -63,11 +60,6 @@ func preRun(cmd *cobra.Command, args []string) {
 			"DistributionNameFlag": DistributionNameFlag,
 		}).Fatal("Distribution not found")
 	}
-
-	if utils.DryRunFlag && OnlyGenerateFlag {
-		log.Warn("Running in dry-run mode - this overrides the --just-generate flag")
-		OnlyGenerateFlag = false
-	}
 }
 
 func run(cmd *cobra.Command, args []string) {
@@ -77,18 +69,13 @@ func run(cmd *cobra.Command, args []string) {
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	utils.RunNPMStart(ARSRepo.RepoDir,
+	utils.RunNPMStartAlways(ARSRepo.RepoDir,
 		"Starting local generation of the individualized repositories containing patch files")
 
-	if !OnlyGenerateFlag {
-		copyLocallyGeneratedFilesToPatchTool()
-		distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
-		PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-		utils.RunNPMStart(PatchRepo.RepoDir,
-			"Actually patching the files to each repository")
-	} else {
-		log.Info("Skipping patching of the student repositories")
-	}
+	copyLocallyGeneratedFilesToPatchTool()
+	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
+	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
+	utils.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
 }
 
 func definePatchFiles(args []string) {
