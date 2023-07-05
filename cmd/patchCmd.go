@@ -16,6 +16,8 @@ import (
 var (
 	// Flags
 	DistributionNameFlag string
+	CustomInputFlag      bool
+
 	// command state vars
 	PatchFiles []string
 	ARSRepo    *ars.ARSRepoType
@@ -35,6 +37,10 @@ func init() {
 	log.Debug("patch.init()")
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
+	patchCmd.Flags().BoolVarP(&CustomInputFlag, "custom-input", "i", false,
+		"create the patch input files yourself in repo editor, and ignore filenames given as input parameters")
+	patchCmd.Flags().BoolVarP(&patch.WithPipelineFlag, "with-pipeline", "p", false,
+		"run the pipeline after patching - that means more load, but automatic update of report pages")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(patchCmd)
@@ -43,7 +49,7 @@ func init() {
 func validateArgs(cmd *cobra.Command, args []string) error {
 	log.Debug("subcmd.validateArgs()")
 	var err error
-	if len(args) == 0 {
+	if !CustomInputFlag && len(args) == 0 {
 		err = fmt.Errorf("You need to specify at least one filename to subcmd.")
 	}
 	return err

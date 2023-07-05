@@ -16,6 +16,10 @@ import (
 	"time"
 )
 
+var (
+	WithPipelineFlag bool
+)
+
 // struct for the editorConfig.json file
 type PatchConfigFileType struct {
 	FilePath string
@@ -49,8 +53,12 @@ func (patchConfigFile *PatchConfigFileType) UpdateFromRepositoryConfigFile(repos
 	patchConfigFile.Content.GroupIds[1] = repositoryConfigFile.Content.Remote.TestRepositoryTargetGroupId
 	patchConfigFile.Content.LogLevel = utils.LogLevelAsString()
 	currentTime := time.Now()
-	formattedTime := currentTime.Format("2006-01-02 15:04")
-	patchConfigFile.Content.CommitMsg = "Patch applied on " + formattedTime
+	formattedTime := currentTime.Format("2006-01-02 15:04:05")
+	patchConfigFile.Content.CommitMsg = "Patch applied "
+	if !WithPipelineFlag {
+		patchConfigFile.Content.CommitMsg += " with [skip ci]"
+	}
+	patchConfigFile.Content.CommitMsg += formattedTime
 	err := patchConfigFile.WriteContent()
 	return err
 }
