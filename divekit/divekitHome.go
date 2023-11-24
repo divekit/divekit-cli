@@ -1,7 +1,8 @@
 package divekit
 
 import (
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"github.com/apex/log"
 	"os"
 )
@@ -17,7 +18,7 @@ var (
 func InitDivekitHomeDir(divekitHomeFlag string) {
 	log.Debug("config.InitDivekitHomeDir()")
 	setDivekitHomeDirFromVariousSources(divekitHomeFlag)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(DivekitHomeDir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(DivekitHomeDir))
 	log.WithFields(log.Fields{
 		"DivekitHomeDir": DivekitHomeDir,
 	}).Info("Setting Divekit Home Dir:")

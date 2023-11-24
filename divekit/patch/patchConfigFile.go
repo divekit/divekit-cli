@@ -7,7 +7,9 @@ package patch
 
 import (
 	"divekit-cli/divekit/ars"
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
+	"divekit-cli/utils/logUtils"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
@@ -31,7 +33,7 @@ type PatchConfigFileType struct {
 // This method is similar to a constructor in OOP
 func NewPatchConfigFile(path string) *PatchConfigFileType {
 	log.Debug("patch.patchConfigFile() - path: " + path)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path))
 	log.WithFields(log.Fields{
 		"PatchConfigFileType.FilePath": path,
 	}).Info("Setting NewPatchConfigFile variables:")
@@ -47,7 +49,7 @@ func (patchConfigFile *PatchConfigFileType) UpdateFromRepositoryConfigFile(repos
 	patchConfigFile.Content.GroupIds = make([]int, 2)
 	patchConfigFile.Content.GroupIds[0] = repositoryConfigFile.Content.Remote.CodeRepositoryTargetGroupId
 	patchConfigFile.Content.GroupIds[1] = repositoryConfigFile.Content.Remote.TestRepositoryTargetGroupId
-	patchConfigFile.Content.LogLevel = utils.LogLevelAsString()
+	patchConfigFile.Content.LogLevel = logUtils.LogLevelAsString()
 	currentTime := time.Now()
 	formattedTime := currentTime.Format("2006-01-02 15:04")
 	patchConfigFile.Content.CommitMsg = "Patch applied on " + formattedTime

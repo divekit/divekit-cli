@@ -1,4 +1,4 @@
-package utils
+package fileUtils
 
 import (
 	"encoding/json"
@@ -62,6 +62,15 @@ func TransformIntoRelativePaths(root string, absPath string) (string, error) {
 }
 
 func CopyFile(srcFileName, destDirName string) error {
+	// If srcFileName is not a valid file then return an error
+	if file, err := os.Stat(srcFileName); file.IsDir() || err != nil {
+		return &fs.PathError{
+			Op:   "CopyFile",
+			Path: srcFileName,
+			Err:  fmt.Errorf("invalid file: %v", err),
+		}
+	}
+
 	srcFile, err := os.Open(srcFileName)
 	if err != nil {
 		return err

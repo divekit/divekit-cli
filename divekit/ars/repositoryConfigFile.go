@@ -6,7 +6,8 @@ package ars
  */
 
 import (
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
@@ -58,7 +59,7 @@ type RepositoryConfigFileType struct {
 // This method is similar to a constructor in OOP
 func NewRepositoryConfigFile(path string) *RepositoryConfigFileType {
 	log.Debug("ars.repositoryConfigFile() - path: " + path)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path))
 	return &RepositoryConfigFileType{
 		FilePath: path,
 	}
@@ -96,7 +97,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
 func (repositoryConfigFile *RepositoryConfigFileType) CheckForDeathTraps() bool {
 	log.Debug("ars.checkForDeathTraps() - filePath: " + repositoryConfigFile.FilePath)
 	if !repositoryConfigFile.Content.General.LocalMode && repositoryConfigFile.Content.Remote.DeleteExistingRepositories {
-		utils.Confirm(
+		errorHandling.Confirm(
 			"Your repositoryConfig.json sets local mode to false, and sets \"deleteExistingRepositories\" \n" +
 				"to true. This means that you'll delete all repositories in the target group. \n" +
 				"Are you sure you want to do this?")
@@ -112,7 +113,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) Clone() *RepositoryConfigF
 func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) *RepositoryConfigFileType {
 	log.Debug("ars.CloneToDifferentLocation() - newFilePath: " + newFilePath)
 	newFile := NewRepositoryConfigFile(newFilePath)
-	utils.DeepCopy(repositoryConfigFile, newFile)
+	fileUtils.DeepCopy(repositoryConfigFile, newFile)
 	newFile.FilePath = newFilePath
 	return newFile
 }

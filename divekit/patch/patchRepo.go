@@ -7,7 +7,8 @@ package patch
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/ars"
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"fmt"
 	"github.com/apex/log"
 	"os"
@@ -30,7 +31,7 @@ func NewPatchRepo() *PatchRepoType {
 	patchRepo.PatchConfigFile = NewPatchConfigFile(patchConfigFileName)
 	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets/input")
 
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(patchRepo.RepoDir, patchRepo.InputDir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(patchRepo.RepoDir, patchRepo.InputDir))
 	log.WithFields(log.Fields{
 		"patchRepo.RepoDir":   patchRepo.RepoDir,
 		" patchRepo.InputDir": patchRepo.InputDir,
@@ -44,11 +45,11 @@ func (patchRepo *PatchRepoType) CleanInputDir() error {
 	errCode := os.RemoveAll(codeDirPath)
 	errTest := os.RemoveAll(testDirPath)
 	if errCode != nil {
-		fmt.Println("Error removing code input directory %s:", errCode)
+		fmt.Println("Error removing code input directory:", errCode)
 		return errCode
 	}
 	if errTest != nil {
-		fmt.Println("Error removing test input directory %s:", errTest)
+		fmt.Println("Error removing test input directory:", errTest)
 		return errTest
 	}
 	return nil

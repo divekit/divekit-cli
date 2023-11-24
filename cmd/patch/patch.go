@@ -1,10 +1,14 @@
-package cmd
+package patch
 
 import (
+	"divekit-cli/cmd"
 	"divekit-cli/divekit/ars"
 	"divekit-cli/divekit/origin"
 	"divekit-cli/divekit/patch"
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
+	"divekit-cli/utils/logUtils"
+	"divekit-cli/utils/runner"
 	"fmt"
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
@@ -22,22 +26,26 @@ var (
 	PatchRepo  *patch.PatchRepoType
 
 	patchCmd = &cobra.Command{
-		Use:    "patch",
-		Short:  "Apply a patch to all repos",
-		Long:   `Patch one or several files in all the repos of a certain distribution of the origin repo`,
-		Args:   validateArgs,
-		PreRun: preRun,
-		Run:    run,
+		Use:     "patch",
+		Short:   "Apply a patch to all repos",
+		Long:    `Patch one or several files in all the repos of a certain distribution of the origin repo`,
+		Args:    validateArgs,
+		PreRunE: preRun,
+		RunE:    run,
 	}
 )
 
 func init() {
 	log.Debug("patch.init()")
+	rootCmdFlags(patchCmd)
+	cmd.RootCmd.AddCommand(patchCmd)
+}
+
+func rootCmdFlags(cmd *cobra.Command) {
 	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
-	rootCmd.AddCommand(patchCmd)
 }
 
 func validateArgs(cmd *cobra.Command, args []string) error {
@@ -50,40 +58,48 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 }
 
 // Checks preconditions before running the command
-func preRun(cmd *cobra.Command, args []string) {
+func preRun(cmd *cobra.Command, args []string) error {
 	ARSRepo = ars.NewARSRepo()
 	PatchRepo = patch.NewPatchRepo()
 
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	if distribution == nil {
-		log.WithFields(log.Fields{
-			"DistributionNameFlag": DistributionNameFlag,
-		}).Fatal("Distribution not found")
+		return fmt.Errorf("distribution not found")
 	}
+	return nil
 }
 
-func run(cmd *cobra.Command, args []string) {
-	log.Debug("subcmd.run()")
+func run(cmd *cobra.Command, args []string) error {
+	log.Debug("subcmd.Run()")
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	utils.RunNPMStartAlways(ARSRepo.RepoDir,
-		"Starting local generation of the individualized repositories containing patch files")
+	if err := runner.RunNPMStartAlways(ARSRepo.RepoDir,
+		"Starting local generation of the individualized repositories containing patch files"); err != nil {
+		errorHandling.OutputErrorsWithAbortMsg(err)
+		return err
+	}
 
 	copyLocallyGeneratedFilesToPatchTool()
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-	utils.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
+	if _, err := runner.RunNPMStart(PatchRepo.RepoDir,
+		"Actually patching the files to each repository"); err != nil {
+		errorHandling.OutputErrorsWithAbortMsg(err)
+		return err
+	}
+
+	return nil
 }
 
 func definePatchFiles(args []string) {
 	log.Debug("subcmd.definePatchFiles()")
 	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
 	for index := range args {
-		foundFiles, foundErr := utils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
-		foundFiles2, foundErr2 := utils.FindFilesInDirRecursively(args[index], srcDir)
+		foundFiles, foundErr := fileUtils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
+		foundFiles2, foundErr2 := fileUtils.FindFilesInDirRecursively(args[index], srcDir)
 		foundFiles = append(foundFiles, foundFiles2...)
 		if foundErr != nil || foundErr2 != nil {
 			fmt.Fprintf(os.Stderr, "%s %s", foundErr, foundErr2)
@@ -102,7 +118,7 @@ func definePatchFiles(args []string) {
 			os.Exit(1)
 		}
 		log.Debug(fmt.Sprintf("Found file %s", foundFiles[0]))
-		relFile, err := utils.TransformIntoRelativePaths(origin.OriginRepo.RepoDir, foundFiles[0])
+		relFile, err := fileUtils.TransformIntoRelativePaths(origin.OriginRepo.RepoDir, foundFiles[0])
 		log.Debug(fmt.Sprintf("... relative to origin repo: %s", relFile))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err)
@@ -133,13 +149,13 @@ func setRepositoryConfigWithinARSRepo() {
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.SavedIndividualRepositoriesFileName =
 		individualConfigFile
 	repositoryConfigWithinARSRepo.Content.General.LocalMode = true
-	repositoryConfigWithinARSRepo.Content.General.GlobalLogLevel = utils.LogLevelAsString()
+	repositoryConfigWithinARSRepo.Content.General.GlobalLogLevel = logUtils.LogLevelAsString()
 	repositoryConfigWithinARSRepo.WriteContent()
 }
 
 func copySavedIndividualizationFileToARS() {
 	log.Debug("subcmd.copySavedIndividualRepositoriesFileToARS()")
-	err := utils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
+	err := fileUtils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
 		ARSRepo.IndividualizationConfig.Dir)
 	if err != nil {
 		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)
@@ -152,7 +168,7 @@ func copyLocallyGeneratedFilesToPatchTool() {
 	// Copy the generated files to the patch tool
 	err := PatchRepo.CleanInputDir()
 	if err == nil {
-		err = utils.CopyAllFilesInDir(ARSRepo.GeneratedLocalOutput.Dir, PatchRepo.InputDir)
+		err = fileUtils.CopyAllFilesInDir(ARSRepo.GeneratedLocalOutput.Dir, PatchRepo.InputDir)
 	}
 	if err != nil {
 		log.Fatalf("Error copying locally generated files to patch tool: %v", err)

@@ -1,4 +1,4 @@
-package utils
+package logUtils
 
 import (
 	"fmt"
@@ -81,6 +81,6 @@ func StringAsLogLevel(levelStr string) (log.Level, error) {
 	case "error":
 		return log.ErrorLevel, nil
 	default:
-		return log.InfoLevel, fmt.Errorf("Invalid log level string: %s", levelStr)
+		return log.InfoLevel, log.ErrInvalidLevel
 	}
 }

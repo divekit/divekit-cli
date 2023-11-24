@@ -6,7 +6,8 @@ package ars
 
 import (
 	"divekit-cli/divekit"
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"github.com/apex/log"
 	"path/filepath"
 )
@@ -40,10 +41,10 @@ func NewARSRepo() *ARSRepoType {
 		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
 	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources/individual_repositories")
 	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources/overview")
-	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/test/output")
+	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/config/output")
 
-	utils.OutputAndAbortIfErrors(
-		utils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
+	errorHandling.OutputAndAbortIfErrors(
+		fileUtils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
 			arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir))
 	log.WithFields(log.Fields{
 		"RepoDir":                      arsRepo.RepoDir,

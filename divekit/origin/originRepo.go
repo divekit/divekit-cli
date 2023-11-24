@@ -7,7 +7,8 @@ package origin
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/ars"
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"github.com/apex/log"
 	"path/filepath"
 )
@@ -37,11 +38,11 @@ func NewOriginRepo(originRepoName string) *OriginRepoType {
 	log.Debug("origin.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
 	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(originRepo.RepoDir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.RepoDir))
 
 	originRepo.initDistributions()
 	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")
-	utils.OutputAndAbortIfErrors(utils.ValidateAllDirPaths(originRepo.ARSConfig.Dir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.ARSConfig.Dir))
 	return originRepo
 }
 
@@ -60,8 +61,8 @@ func (originRepo *OriginRepoType) initDistributions() {
 	log.Debug("origin.initDistributions()")
 	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo/distributions")
 	originRepo.DistributionMap = make(map[string]*Distribution)
-	distributionFolders, err := utils.ListSubfolderNames(distributionRootDir)
-	utils.OutputAndAbortIfError(err)
+	distributionFolders, err := fileUtils.ListSubfolderNames(distributionRootDir)
+	errorHandling.OutputAndAbortIfError(err)
 
 	for _, distributionName := range distributionFolders {
 		distributionFolder := filepath.Join(distributionRootDir, distributionName)
@@ -77,8 +78,8 @@ func (originRepo *OriginRepoType) initDistributions() {
 func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionName string, distributionFolder string) {
 	log.Debug("origin.initIndividualRepositoriesFile()")
 	individualRepositoriesFilePath, err :=
-		utils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
-	utils.OutputAndAbortIfError(err)
+		fileUtils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
+	errorHandling.OutputAndAbortIfError(err)
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist

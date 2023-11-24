@@ -1,4 +1,4 @@
-package utils
+package errorHandling
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 
 // Outputs a list of errors to stderr, and aborts the program if there are any errors
 func OutputAndAbortIfErrors(errorsList []error) {
-	log.Debug("utils.OutputAndAbortIfErrors()")
+	log.Debug("errorHandling.OutputAndAbortIfErrors()")
 	for _, err := range errorsList {
 		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
 	}
@@ -22,14 +22,14 @@ func OutputAndAbortIfErrors(errorsList []error) {
 
 // Outputs an error to stderr, if there is one, and aborts the program if so
 func OutputAndAbortIfError(error error) {
-	log.Debug("utils.OutputAndAbortIfError()")
+	log.Debug("errorHandling.OutputAndAbortIfError()")
 	if error != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "Error: ", error)
 		os.Exit(1)
 	}
 }
 
-// Asks the user to confirm an action, and aborts if the user doesn't confirm
+// Confirm asks the user to confirm an action, and aborts if the user doesn't confirm
 func Confirm(prompt string) {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -46,4 +46,13 @@ func Confirm(prompt string) {
 		fmt.Println("Aborting")
 		os.Exit(1)
 	}
+}
+
+// OutputErrorsWithAbortMsg outputs one or more errors to stderr along with an abort message.
+func OutputErrorsWithAbortMsg(errors ...error) {
+	log.Debug("errorHandling.OutputErrorsWithAbortMsg()")
+	for _, err := range errors {
+		_, _ = fmt.Fprintln(os.Stderr, "Error: ", err)
+	}
+	_, _ = fmt.Fprintln(os.Stderr, "Aborting")
 }
