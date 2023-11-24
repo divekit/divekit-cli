@@ -21,3 +21,6 @@ go.work
 
 # Intellij
 .idea
+
+# Installer
+/build/output
