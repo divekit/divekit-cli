@@ -18,6 +18,7 @@
                 <Environment Id="PATH" Name="PATH" Value="[DIVEKIT_INSTALL_DIR]\bin" Permanent="no" Part="last"
                              Action="set" System="no"/>
             </Component>
+
             <Directory Id="ProgramFiles64Folder">
                 <Directory Name="Divekit" Id="DIVEKIT_INSTALL_DIR">
                     <Directory Name="bin" Id="DIR_BIN">
@@ -30,6 +31,7 @@
                         <Directory Name="divekit-repo-editor" Id="REPO_EDITOR_DIR"/>
                     </Directory>
                 </Directory>
+
                 <Directory Id="ProgramMenuFolder">
                     <Directory Id="DIR_STARTMENUDIR" Name="Divekit">
                         <Component Win64="yes" Id="CMP_UNINSTALL_SHORTCUT" Guid="f3fccf8b-d1fb-4026-8baf-0f1c2778d4d5">
