@@ -3,6 +3,8 @@ package testUtils
 import (
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 // CreateFile generates a file at a specified path, returning the file path. If desired, the file can be generated
@@ -48,4 +50,29 @@ func DeleteDir(path string) {
 	if err := os.RemoveAll(path); err != nil {
 		log.Fatalf("Could not remove directory: %v", err)
 	}
+}
+func ToRelPath(absPath string, root string) string {
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil {
+		log.Fatalf("Could not convert an absolute path into a relative path: %v", err)
+	}
+	return UnifyPath(relPath)
+}
+func ToRelPaths(absPaths []string, root string) []string {
+	var result []string
+
+	for _, absPath := range absPaths {
+		result = append(result, ToRelPath(absPath, root))
+	}
+
+	return result
+}
+
+func GetBaseName(path string) string {
+	return ToRelPath(path, filepath.Dir(path))
+}
+
+// UnifyPath replaces all `\\` with `/`, addressing the variations in path formats across different operating systems.
+func UnifyPath(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }

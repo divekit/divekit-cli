@@ -38,11 +38,13 @@ func NewOriginRepo(originRepoName string) *OriginRepoType {
 	log.Debug("origin.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
 	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.RepoDir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.RepoDir),
+		"The path to the originRepo is ")
 
 	originRepo.initDistributions()
 	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.ARSConfig.Dir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.ARSConfig.Dir),
+		"The path to the ars config dir is invalid")
 	return originRepo
 }
 
@@ -62,7 +64,7 @@ func (originRepo *OriginRepoType) initDistributions() {
 	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo/distributions")
 	originRepo.DistributionMap = make(map[string]*Distribution)
 	distributionFolders, err := fileUtils.ListSubfolderNames(distributionRootDir)
-	errorHandling.OutputAndAbortIfError(err)
+	errorHandling.OutputAndAbortIfError(err, "The path to the distribution root dir is invalid")
 
 	for _, distributionName := range distributionFolders {
 		distributionFolder := filepath.Join(distributionRootDir, distributionName)
@@ -79,7 +81,7 @@ func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionNam
 	log.Debug("origin.initIndividualRepositoriesFile()")
 	individualRepositoriesFilePath, err :=
 		fileUtils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
-	errorHandling.OutputAndAbortIfError(err)
+	errorHandling.OutputAndAbortIfError(err, "The path to the individual_repositories file is invalid")
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist

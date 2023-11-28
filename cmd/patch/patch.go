@@ -25,7 +25,11 @@ var (
 	ARSRepo    *ars.ARSRepoType
 	PatchRepo  *patch.PatchRepoType
 
-	patchCmd = &cobra.Command{
+	patchCmd = NewPatchCmd()
+)
+
+func NewPatchCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:     "patch",
 		Short:   "Apply a patch to all repos",
 		Long:    `Patch one or several files in all the repos of a certain distribution of the origin repo`,
@@ -33,26 +37,28 @@ var (
 		PreRunE: preRun,
 		RunE:    run,
 	}
-)
+
+}
 
 func init() {
 	log.Debug("patch.init()")
-	rootCmdFlags(patchCmd)
+	setCmdFlags(patchCmd)
 	cmd.RootCmd.AddCommand(patchCmd)
 }
 
-func rootCmdFlags(cmd *cobra.Command) {
-	patchCmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
+func setCmdFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&DistributionNameFlag, "distribution", "d", "milestone",
 		"name of the repo-distribution to patch")
 
-	patchCmd.MarkPersistentFlagRequired("originrepo")
+	cmd.MarkPersistentFlagRequired("originrepo")
 }
 
 func validateArgs(cmd *cobra.Command, args []string) error {
 	log.Debug("subcmd.validateArgs()")
 	var err error
 	if len(args) == 0 {
-		err = fmt.Errorf("You need to specify at least one filename to subcmd.")
+		err = fmt.Errorf("You need to specify at least one filename to subcmd")
+		errorHandling.OutputError(err)
 	}
 	return err
 }
@@ -64,32 +70,33 @@ func preRun(cmd *cobra.Command, args []string) error {
 
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	if distribution == nil {
-		return fmt.Errorf("distribution not found")
+		log.WithFields(log.Fields{
+			"DistributionNameFlag": DistributionNameFlag,
+		})
+		errorHandling.OutputAndAbortIfError(fmt.Errorf("distribution not found"),
+			"Could not prepare the patch command")
 	}
+
 	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	log.Info("patch_run: TEST")
 	log.Debug("subcmd.Run()")
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	if err := runner.RunNPMStartAlways(ARSRepo.RepoDir,
-		"Starting local generation of the individualized repositories containing patch files"); err != nil {
-		errorHandling.OutputErrorsWithAbortMsg(err)
-		return err
-	}
+	errorHandling.OutputAndAbortIfError(runner.RunNPMStartAlways(ARSRepo.RepoDir,
+		"Starting local generation of the individualized repositories containing patch files"),
+		"Could run the ARS repository")
 
 	copyLocallyGeneratedFilesToPatchTool()
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-	if _, err := runner.RunNPMStart(PatchRepo.RepoDir,
-		"Actually patching the files to each repository"); err != nil {
-		errorHandling.OutputErrorsWithAbortMsg(err)
-		return err
-	}
+	_, err := runner.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
+	errorHandling.OutputAndAbortIfError(err, "Could not run the repo editor repository")
 
 	return nil
 }

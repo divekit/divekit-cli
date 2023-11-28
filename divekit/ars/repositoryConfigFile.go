@@ -59,7 +59,8 @@ type RepositoryConfigFileType struct {
 // This method is similar to a constructor in OOP
 func NewRepositoryConfigFile(path string) *RepositoryConfigFileType {
 	log.Debug("ars.repositoryConfigFile() - path: " + path)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path),
+		"The path to the repository config file is invalid")
 	return &RepositoryConfigFileType{
 		FilePath: path,
 	}

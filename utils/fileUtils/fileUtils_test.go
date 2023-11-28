@@ -7,9 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -51,7 +49,7 @@ func TestFindFilesInDirRecursively(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			foundFiles, err := FindFilesInDirRecursively(testCase.searchedFile, testCase.testDir)
-			foundFiles = toRelPaths(foundFiles, testCase.testDir)
+			foundFiles = testUtils.ToRelPaths(foundFiles, testCase.testDir)
 
 			assert.IsType(t, testCase.error, err)
 			assert.ElementsMatch(t, testCase.foundFiles, foundFiles)
@@ -79,7 +77,7 @@ func TestFindFilesInDir(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			foundFiles, err := FindFilesInDir(testCase.searchedFile, testCase.testDir)
-			foundFiles = toRelPaths(foundFiles, testCase.testDir)
+			foundFiles = testUtils.ToRelPaths(foundFiles, testCase.testDir)
 
 			assert.IsType(t, testCase.error, err)
 			assert.ElementsMatch(t, testCase.foundFiles, foundFiles)
@@ -103,7 +101,7 @@ func TestTransformIntoRelativePaths(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			relPath, err := TransformIntoRelativePaths(testCase.root, testCase.absPath)
-			relPath = unifyPath(relPath)
+			relPath = testUtils.UnifyPath(relPath)
 
 			assert.IsType(t, testCase.error, err)
 			assert.Equal(t, testCase.relPath, relPath)
@@ -140,7 +138,7 @@ func TestCopyFile(t *testing.T) {
 			defer testUtils.DeleteDir(testCase.dstDirPath)
 			err := CopyFile(testCase.srcFilePath, testCase.dstDirPath)
 
-			dstFilePath := testCase.dstDirPath + "/" + getBaseName(testCase.srcFilePath)
+			dstFilePath := testCase.dstDirPath + "/" + testUtils.GetBaseName(testCase.srcFilePath)
 			if testCase.shouldCopy {
 				assert.FileExists(t, dstFilePath)
 			} else {
@@ -278,30 +276,4 @@ func createEqualFileAndDir() string {
 	testUtils.CreateFile(rootDir, "/a/a", "")
 
 	return rootDir
-}
-
-func toRelPath(absPath string, root string) string {
-	relPath, err := filepath.Rel(root, absPath)
-	if err != nil {
-		log.Fatalf("Could not convert an absolute path into a relative path: %v", err)
-	}
-	return unifyPath(relPath)
-}
-func toRelPaths(absPaths []string, root string) []string {
-	var result []string
-
-	for _, absPath := range absPaths {
-		result = append(result, toRelPath(absPath, root))
-	}
-
-	return result
-}
-
-func getBaseName(path string) string {
-	return toRelPath(path, filepath.Dir(path))
-}
-
-// unifyPath replaces all `\\` with `/`, addressing the variations in path formats across different operating systems.
-func unifyPath(path string) string {
-	return strings.ReplaceAll(path, "\\", "/")
 }

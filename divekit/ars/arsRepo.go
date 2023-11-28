@@ -45,7 +45,8 @@ func NewARSRepo() *ARSRepoType {
 
 	errorHandling.OutputAndAbortIfErrors(
 		fileUtils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
-			arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir))
+			arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir),
+		"Invalid paths have been detected for one or more ars repo paths")
 	log.WithFields(log.Fields{
 		"RepoDir":                      arsRepo.RepoDir,
 		"ConfigDir":                    arsRepo.Config.Dir,

@@ -18,7 +18,8 @@ var (
 func InitDivekitHomeDir(divekitHomeFlag string) {
 	log.Debug("config.InitDivekitHomeDir()")
 	setDivekitHomeDirFromVariousSources(divekitHomeFlag)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(DivekitHomeDir))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(DivekitHomeDir),
+		"Could not initialize divekitHomeDir")
 	log.WithFields(log.Fields{
 		"DivekitHomeDir": DivekitHomeDir,
 	}).Info("Setting Divekit Home Dir:")

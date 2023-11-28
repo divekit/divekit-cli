@@ -33,7 +33,7 @@ type PatchConfigFileType struct {
 // This method is similar to a constructor in OOP
 func NewPatchConfigFile(path string) *PatchConfigFileType {
 	log.Debug("patch.patchConfigFile() - path: " + path)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path))
+	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllFilePaths(path), "The path to the patch config file is invalid")
 	log.WithFields(log.Fields{
 		"PatchConfigFileType.FilePath": path,
 	}).Info("Setting NewPatchConfigFile variables:")
