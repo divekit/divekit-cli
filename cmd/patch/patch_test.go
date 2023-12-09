@@ -44,7 +44,7 @@ func TestPatch(t *testing.T) {
 }
 
 func clearARSGeneratedFiles() {
-
+	// todo
 }
 
 func executePatch(args PatchArguments) (string, error) {
