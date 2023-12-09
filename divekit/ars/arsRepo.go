@@ -41,12 +41,12 @@ func NewARSRepo() *ARSRepoType {
 		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
 	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources/individual_repositories")
 	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources/overview")
-	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/config/output")
+	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/test/output")
 
 	errorHandling.OutputAndAbortIfErrors(
 		fileUtils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
 			arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir),
-		"Invalid paths have been detected for one or more ars repo paths")
+		"Invalid ars repo path")
 	log.WithFields(log.Fields{
 		"RepoDir":                      arsRepo.RepoDir,
 		"ConfigDir":                    arsRepo.Config.Dir,
@@ -54,6 +54,6 @@ func NewARSRepo() *ARSRepoType {
 		"IndividualizationConfigDir":   arsRepo.IndividualizationConfig.Dir,
 		"GeneratedOverviewFilesDir":    arsRepo.GeneratedOverviewFiles.Dir,
 		"GeneratedLocalOutputFilesDir": arsRepo.GeneratedLocalOutput.Dir,
-	}).Info("Setting global variables:")
+	}).Info("Setting global variables")
 	return arsRepo
 }

@@ -14,7 +14,7 @@ import (
 func OutputAndAbortIfErrors(errorsList []error, msg string) {
 	log.Debug("errorHandling.OutputAndAbortIfErrors()")
 	for _, err := range errorsList {
-		outputErrorWithFuncName(err, msg)
+		outputWithErrorLocation(err, msg)
 	}
 
 	if len(errorsList) > 0 {
@@ -26,7 +26,7 @@ func OutputAndAbortIfErrors(errorsList []error, msg string) {
 func OutputAndAbortIfError(err error, msg string) {
 	log.Debug("errorHandling.OutputAndAbortIfError()")
 	if err != nil {
-		outputErrorWithFuncName(err, msg)
+		outputWithErrorLocation(err, msg)
 		os.Exit(1)
 	}
 }
@@ -50,18 +50,15 @@ func Confirm(prompt string) {
 	}
 }
 
-func OutputError(err error) {
-	log.Debug("errorHandling.OutputError()")
-	_, _ = fmt.Fprintln(os.Stderr, err)
+func outputWithErrorLocation(err error, msg string) {
+	location := getErrorLocation()
+	_, _ = fmt.Fprintf(os.Stderr, "Error at %s %s: %v\n", location, msg, err)
 }
 
-func outputErrorWithFuncName(err error, msg string) {
-	funcName := getPreviousFuncName()
-	_, _ = fmt.Fprintf(os.Stderr, "[%s] %s: %v\n", funcName, msg, err)
-}
-func getPreviousFuncName() string {
+// getErrorLocation gets a filename along with the line where the error was triggered
+func getErrorLocation() string {
 	pc, _, _, _ := runtime.Caller(3)
-	fullFuncName := runtime.FuncForPC(pc).Name()
-	funcName := testUtils.GetBaseName(fullFuncName)
-	return funcName
+	file, line := runtime.FuncForPC(pc).FileLine(pc)
+	src := testUtils.GetBaseName(fmt.Sprintf("%s:%v", file, line))
+	return src
 }

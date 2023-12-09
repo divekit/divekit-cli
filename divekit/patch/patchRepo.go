@@ -32,7 +32,7 @@ func NewPatchRepo() *PatchRepoType {
 	patchRepo.InputDir = filepath.Join(patchRepo.RepoDir, "assets/input")
 
 	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(patchRepo.RepoDir, patchRepo.InputDir),
-		"Invalid path have been detected for one or more patchRepo paths")
+		"Invalid patch repo path")
 	log.WithFields(log.Fields{
 		"patchRepo.RepoDir":   patchRepo.RepoDir,
 		" patchRepo.InputDir": patchRepo.InputDir,

@@ -39,7 +39,7 @@ func NewOriginRepo(originRepoName string) *OriginRepoType {
 	originRepo := &OriginRepoType{}
 	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
 	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.RepoDir),
-		"The path to the originRepo is ")
+		"The path to the origin repo is invalid")
 
 	originRepo.initDistributions()
 	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")

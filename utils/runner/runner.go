@@ -5,6 +5,8 @@ package runner
  */
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/apex/log"
 	"os"
 	"os/exec"
@@ -35,14 +37,20 @@ func RunNPMStart(dirPath, infoMsg string) (bool, error) {
 
 func executeCmd(dirPath string) error {
 	// Run "npm start"
+	var stderrBuffer bytes.Buffer
 	cmd := exec.Command("npm", "start")
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = &stderrBuffer
 	cmd.Dir = dirPath
 
 	if err := cmd.Run(); err != nil {
 		log.Errorf("Error running 'npm start': %v", err)
 		return err
+	}
+
+	if err := stderrBuffer.String(); err != "" {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		return fmt.Errorf(err)
 	}
 
 	return nil

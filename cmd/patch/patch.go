@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -28,22 +27,21 @@ var (
 	patchCmd = NewPatchCmd()
 )
 
-func NewPatchCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:     "patch",
-		Short:   "Apply a patch to all repos",
-		Long:    `Patch one or several files in all the repos of a certain distribution of the origin repo`,
-		Args:    validateArgs,
-		PreRunE: preRun,
-		RunE:    run,
-	}
-
-}
-
 func init() {
 	log.Debug("patch.init()")
 	setCmdFlags(patchCmd)
 	cmd.RootCmd.AddCommand(patchCmd)
+}
+
+func NewPatchCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:    "patch",
+		Short:  "Apply a patch to all repos",
+		Long:   `Patch one or several files in all the repos of a certain distribution of the origin repo`,
+		Args:   validateArgs,
+		PreRun: preRun,
+		Run:    run,
+	}
 }
 
 func setCmdFlags(cmd *cobra.Command) {
@@ -58,13 +56,12 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 	var err error
 	if len(args) == 0 {
 		err = fmt.Errorf("You need to specify at least one filename to subcmd")
-		errorHandling.OutputError(err)
 	}
 	return err
 }
 
 // Checks preconditions before running the command
-func preRun(cmd *cobra.Command, args []string) error {
+func preRun(cmd *cobra.Command, args []string) {
 	ARSRepo = ars.NewARSRepo()
 	PatchRepo = patch.NewPatchRepo()
 
@@ -76,60 +73,52 @@ func preRun(cmd *cobra.Command, args []string) error {
 		errorHandling.OutputAndAbortIfError(fmt.Errorf("distribution not found"),
 			"Could not prepare the patch command")
 	}
-
-	return nil
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	log.Info("patch_run: TEST")
+func run(cmd *cobra.Command, args []string) {
 	log.Debug("subcmd.Run()")
 	definePatchFiles(args)
 	log.Info(fmt.Sprintf("Found files to patch:\n%s", strings.Join(PatchFiles, "\n")))
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	errorHandling.OutputAndAbortIfError(runner.RunNPMStartAlways(ARSRepo.RepoDir,
-		"Starting local generation of the individualized repositories containing patch files"),
-		"Could run the ARS repository")
+	err := runner.RunNPMStartAlways(ARSRepo.RepoDir,
+		"Starting local generation of the individualized repositories containing patch files")
+	errorHandling.OutputAndAbortIfError(err, "Could run the ARS repository")
 
 	copyLocallyGeneratedFilesToPatchTool()
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
 	PatchRepo.UpdatePatchConfigFile(distribution.RepositoryConfigFile)
-	_, err := runner.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
+	_, err = runner.RunNPMStart(PatchRepo.RepoDir, "Actually patching the files to each repository")
 	errorHandling.OutputAndAbortIfError(err, "Could not run the repo editor repository")
-
-	return nil
 }
 
 func definePatchFiles(args []string) {
 	log.Debug("subcmd.definePatchFiles()")
 	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
 	for index := range args {
+		println("args[index]:", args[index])
 		foundFiles, foundErr := fileUtils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
 		foundFiles2, foundErr2 := fileUtils.FindFilesInDirRecursively(args[index], srcDir)
 		foundFiles = append(foundFiles, foundFiles2...)
 		if foundErr != nil || foundErr2 != nil {
-			fmt.Fprintf(os.Stderr, "%s %s", foundErr, foundErr2)
-			os.Exit(1)
+			errorHandling.OutputAndAbortIfError(fmt.Errorf(fmt.Sprintf("%s %s", foundErr, foundErr2)), "-")
 		}
 		if len(foundFiles) == 0 {
-			fmt.Fprintf(os.Stderr, "No files found with name %s", args[index])
-			os.Exit(1)
+			errorHandling.OutputAndAbortIfError(fmt.Errorf("No files found with name "+args[index]), "-")
 		}
 		if len(foundFiles) > 1 {
 			errorMsg := "Error: Multiple files found:\n"
 			for _, file := range foundFiles {
 				errorMsg += fmt.Sprintf("  - %s\n", file)
 			}
-			fmt.Fprintf(os.Stderr, "%s", errorMsg)
-			os.Exit(1)
+			errorHandling.OutputAndAbortIfError(fmt.Errorf(errorMsg), "-")
 		}
 		log.Debug(fmt.Sprintf("Found file %s", foundFiles[0]))
 		relFile, err := fileUtils.TransformIntoRelativePaths(origin.OriginRepo.RepoDir, foundFiles[0])
 		log.Debug(fmt.Sprintf("... relative to origin repo: %s", relFile))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-			os.Exit(1)
+			errorHandling.OutputAndAbortIfError(err, "Could not transform into relative paths")
 		}
 		PatchFiles = append(PatchFiles, relFile)
 	}
@@ -141,8 +130,9 @@ func setRepositoryConfigWithinARSRepo() {
 	if distribution == nil {
 		log.WithFields(log.Fields{
 			"DistributionNameFlag": DistributionNameFlag,
-		}).Fatal("Distribution not found")
-		os.Exit(1)
+		})
+		errorHandling.OutputAndAbortIfError(fmt.Errorf("distribution not found"),
+			"Could not set the repository config within the ars repo")
 	}
 	repositoryConfigFile := distribution.RepositoryConfigFile
 	repositoryConfigFile.ReadContent()
@@ -162,11 +152,9 @@ func setRepositoryConfigWithinARSRepo() {
 
 func copySavedIndividualizationFileToARS() {
 	log.Debug("subcmd.copySavedIndividualRepositoriesFileToARS()")
-	err := fileUtils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
-		ARSRepo.IndividualizationConfig.Dir)
-	if err != nil {
-		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)
-	}
+	errorHandling.OutputAndAbortIfError(
+		fileUtils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
+			ARSRepo.IndividualizationConfig.Dir), "Error copying individualization file to "+ARSRepo.IndividualizationConfig.Dir)
 }
 
 func copyLocallyGeneratedFilesToPatchTool() {
@@ -177,9 +165,6 @@ func copyLocallyGeneratedFilesToPatchTool() {
 	if err == nil {
 		err = fileUtils.CopyAllFilesInDir(ARSRepo.GeneratedLocalOutput.Dir, PatchRepo.InputDir)
 	}
-	if err != nil {
-		log.Fatalf("Error copying locally generated files to patch tool: %v", err)
-		os.Exit(1)
-	}
+	errorHandling.OutputAndAbortIfError(err, "Error copying locally generated files to patch tool")
 	log.Info("Copying completed.")
 }

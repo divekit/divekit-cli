@@ -114,7 +114,8 @@ func (repositoryConfigFile *RepositoryConfigFileType) Clone() *RepositoryConfigF
 func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) *RepositoryConfigFileType {
 	log.Debug("ars.CloneToDifferentLocation() - newFilePath: " + newFilePath)
 	newFile := NewRepositoryConfigFile(newFilePath)
-	fileUtils.DeepCopy(repositoryConfigFile, newFile)
+	errorHandling.OutputAndAbortIfError(fileUtils.DeepCopy(repositoryConfigFile, newFile),
+		"Could not copy the repository config file")
 	newFile.FilePath = newFilePath
 	return newFile
 }
