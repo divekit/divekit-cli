@@ -1,6 +1,7 @@
 @echo off
 cls
-SET PATH=%PATH%;.\assets\wix
+SET PATH=%PATH%;.\assets\binaries
+echo.
 
 
 :: Check if that output dir exists
