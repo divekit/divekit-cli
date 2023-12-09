@@ -18,12 +18,10 @@
 
 # Go workspace file
 go.work
+.env*
 
 # Intellij
 .idea
 
 # Installer
 /build/output
-
-# env
-.env
