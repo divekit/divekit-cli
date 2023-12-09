@@ -24,3 +24,6 @@ go.work
 
 # Installer
 /build/output
+
+# env
+.env
