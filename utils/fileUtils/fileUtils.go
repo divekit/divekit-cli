@@ -9,13 +9,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
 // Searches recursively for full path(es) of a given filename. Returns a 1-elem
 // array if there is just one occurrence, or an array with several elements otherwise.
-func FindFilesInDirRecursively(justTheFileName, rootDir string) ([]string, error) {
-	log.Debug("utils.FindFilesInDirRecursively() - justTheFileName: " + justTheFileName + ", rootDir: " + rootDir)
+func FindFilesInDirRecursively(rootDir string, justTheFileNames ...string) ([]string, error) {
 	var targetPaths []string
 
 	err := filepath.Walk(rootDir, func(currentPath string, info os.FileInfo, err error) error {
@@ -23,7 +23,26 @@ func FindFilesInDirRecursively(justTheFileName, rootDir string) ([]string, error
 			return err
 		}
 		// Check if the current file matches the target file name
-		if info.Mode().IsRegular() && info.Name() == justTheFileName {
+		if info.Mode().IsRegular() && slices.Contains(justTheFileNames, info.Name()) {
+			targetPaths = append(targetPaths, currentPath)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error searching for files: %v", err)
+	}
+	return targetPaths, nil
+}
+
+// Same as FindFilesInDirRecursively, but searches for any files (not just the ones with the given names)
+func FindAnyFilesInDirRecursively(rootDir string) ([]string, error) {
+	var targetPaths []string
+
+	err := filepath.Walk(rootDir, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.Mode().IsRegular() {
 			targetPaths = append(targetPaths, currentPath)
 		}
 		return nil
@@ -35,15 +54,14 @@ func FindFilesInDirRecursively(justTheFileName, rootDir string) ([]string, error
 }
 
 // same as FindFilesInDirRecursively, but without the recursive descent
-func FindFilesInDir(justTheFileName, rootDir string) ([]string, error) {
-	log.Debug("utils.FindFilesInDir() - justTheFileName: " + justTheFileName + ", rootDir: " + rootDir)
+func FindFilesInDir(rootDir string, justTheFileNames ...string) ([]string, error) {
 	files, err := ioutil.ReadDir(rootDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory: %v", err)
 	}
 	filePaths := make([]string, 0)
 	for _, file := range files {
-		if !file.IsDir() && file.Name() == justTheFileName {
+		if !file.IsDir() && slices.Contains(justTheFileNames, file.Name()) {
 			filePaths = append(filePaths, filepath.Join(rootDir, file.Name()))
 			break
 		}
@@ -245,4 +263,80 @@ func DeepCopy(srcObject, destinationObject interface{}) error {
 	}
 
 	return nil
+}
+
+// CreateFile generates a file at a specified path, returning the file path. If desired, the file can be generated
+// with content provided as an argument.
+func CreateFile(path string, fileName string, fileContent string) {
+	f, err := os.Create(path + "/" + fileName)
+	if err != nil {
+		log.Fatalf("Could not create a file: %v", err)
+	}
+
+	_, err = f.Write([]byte(fileContent))
+	if err != nil {
+		log.Fatalf("Could not write to file: %v", err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		log.Fatalf("Could not close file: %v", err)
+	}
+}
+
+// CreateTmpDir creates a directory in the temp folder and provides its path as a
+// return value. It is the caller's responsibility to remove this folder when it is no longer needed.
+func CreateTmpDir() string {
+	path, err := os.MkdirTemp("", "divekit_cli_")
+	if err != nil {
+		log.Fatalf("Could not create directory: %v", err)
+	}
+
+	return path
+}
+
+// CreateDir creates a directory named path, along with any necessary parents. If path is already a directory,
+// CreateDir does nothing.
+func CreateDir(path string) {
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		log.Fatalf("Could not create directory: %v", err)
+	}
+}
+
+// DeleteDir deletes a specified directory along with its files and subdirectories.
+func DeleteDir(path string) {
+	if err := os.RemoveAll(path); err != nil {
+		log.Fatalf("Could not remove directory: %v", err)
+	}
+}
+func ToRelPath(absPath string, root string) string {
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil {
+		log.Fatalf("Could not convert an absolute path into a relative path: %v", err)
+	}
+	return UnifyPath(relPath)
+}
+func ToRelPaths(absPaths []string, root string) []string {
+	var result []string
+	for _, absPath := range absPaths {
+		result = append(result, ToRelPath(absPath, root))
+	}
+	return result
+}
+
+func GetBaseName(path string) string {
+	return ToRelPath(path, filepath.Dir(path))
+}
+
+func GetBaseNames(paths ...string) []string {
+	var result []string
+	for _, path := range paths {
+		result = append(result, GetBaseName(path))
+	}
+	return result
+}
+
+// UnifyPath replaces all `\\` with `/`, addressing the variations in path formats across different operating systems.
+func UnifyPath(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }

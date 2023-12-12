@@ -2,7 +2,7 @@ package errorHandling
 
 import (
 	"bufio"
-	"divekit-cli/utils/testUtils"
+	"divekit-cli/utils/fileUtils"
 	"fmt"
 	"github.com/apex/log"
 	"os"
@@ -59,6 +59,6 @@ func outputWithErrorLocation(err error, msg string) {
 func getErrorLocation() string {
 	pc, _, _, _ := runtime.Caller(3)
 	file, line := runtime.FuncForPC(pc).FileLine(pc)
-	src := testUtils.GetBaseName(fmt.Sprintf("%s:%v", file, line))
+	src := fileUtils.GetBaseName(fmt.Sprintf("%s:%v", file, line))
 	return src
 }

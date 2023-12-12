@@ -29,6 +29,7 @@ var (
 
 func init() {
 	log.Debug("patch.init()")
+	initVariables()
 	setCmdFlags(patchCmd)
 	cmd.RootCmd.AddCommand(patchCmd)
 }
@@ -42,6 +43,13 @@ func NewPatchCmd() *cobra.Command {
 		PreRun: preRun,
 		Run:    run,
 	}
+}
+
+func initVariables() {
+	DistributionNameFlag = ""
+	PatchFiles = []string{}
+	ARSRepo = nil
+	PatchRepo = nil
 }
 
 func setCmdFlags(cmd *cobra.Command) {
@@ -98,8 +106,8 @@ func definePatchFiles(args []string) {
 	srcDir := filepath.Join(origin.OriginRepo.RepoDir, "src")
 	for index := range args {
 		println("args[index]:", args[index])
-		foundFiles, foundErr := fileUtils.FindFilesInDir(args[index], origin.OriginRepo.RepoDir)
-		foundFiles2, foundErr2 := fileUtils.FindFilesInDirRecursively(args[index], srcDir)
+		foundFiles, foundErr := fileUtils.FindFilesInDir(origin.OriginRepo.RepoDir, args[index])
+		foundFiles2, foundErr2 := fileUtils.FindFilesInDirRecursively(srcDir, args[index])
 		foundFiles = append(foundFiles, foundFiles2...)
 		if foundErr != nil || foundErr2 != nil {
 			errorHandling.OutputAndAbortIfError(fmt.Errorf(fmt.Sprintf("%s %s", foundErr, foundErr2)), "-")

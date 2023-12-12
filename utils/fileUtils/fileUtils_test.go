@@ -1,7 +1,6 @@
 package fileUtils
 
 import (
-	"divekit-cli/utils/testUtils"
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
@@ -48,8 +47,8 @@ func TestFindFilesInDirRecursively(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			foundFiles, err := FindFilesInDirRecursively(testCase.searchedFile, testCase.testDir)
-			foundFiles = testUtils.ToRelPaths(foundFiles, testCase.testDir)
+			foundFiles, err := FindFilesInDirRecursively(testCase.testDir, testCase.searchedFile)
+			foundFiles = ToRelPaths(foundFiles, testCase.testDir)
 
 			assert.IsType(t, testCase.error, err)
 			assert.ElementsMatch(t, testCase.foundFiles, foundFiles)
@@ -76,8 +75,8 @@ func TestFindFilesInDir(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			foundFiles, err := FindFilesInDir(testCase.searchedFile, testCase.testDir)
-			foundFiles = testUtils.ToRelPaths(foundFiles, testCase.testDir)
+			foundFiles, err := FindFilesInDir(testCase.testDir, testCase.searchedFile)
+			foundFiles = ToRelPaths(foundFiles, testCase.testDir)
 
 			assert.IsType(t, testCase.error, err)
 			assert.ElementsMatch(t, testCase.foundFiles, foundFiles)
@@ -101,7 +100,7 @@ func TestTransformIntoRelativePaths(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			relPath, err := TransformIntoRelativePaths(testCase.root, testCase.absPath)
-			relPath = testUtils.UnifyPath(relPath)
+			relPath = UnifyPath(relPath)
 
 			assert.IsType(t, testCase.error, err)
 			assert.Equal(t, testCase.relPath, relPath)
@@ -120,14 +119,14 @@ func TestCopyFile(t *testing.T) {
 		{
 			"Should throw an error and not copy a directory",
 			TestDirs.Simple,
-			testUtils.CreateTmpDir(),
+			CreateTmpDir(),
 			false,
 			&fs.PathError{},
 		},
 		{
 			"Should copy a file into another directory",
 			TestDirs.Simple + "/1.txt",
-			testUtils.CreateTmpDir(),
+			CreateTmpDir(),
 			true,
 			nil,
 		},
@@ -135,10 +134,10 @@ func TestCopyFile(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			defer testUtils.DeleteDir(testCase.dstDirPath)
+			defer DeleteDir(testCase.dstDirPath)
 			err := CopyFile(testCase.srcFilePath, testCase.dstDirPath)
 
-			dstFilePath := testCase.dstDirPath + "/" + testUtils.GetBaseName(testCase.srcFilePath)
+			dstFilePath := testCase.dstDirPath + "/" + GetBaseName(testCase.srcFilePath)
 			if testCase.shouldCopy {
 				assert.FileExists(t, dstFilePath)
 			} else {
@@ -223,7 +222,7 @@ func deleteTestDirs() {
 
 	for i := 0; i < values.NumField(); i++ {
 		testDir := values.Field(i).String()
-		testUtils.DeleteDir(testDir)
+		DeleteDir(testDir)
 	}
 }
 
@@ -233,11 +232,11 @@ func createSimpleDir() string {
 	// │  └─ 1.txt
 	// └─ 1.txt
 
-	rootDir := testUtils.CreateTmpDir()
+	rootDir := CreateTmpDir()
 
-	testUtils.CreateDir(rootDir + "/a")
+	CreateDir(rootDir + "/a")
 	for _, file := range []string{"/1.txt", "/a/1.txt"} {
-		testUtils.CreateFile(rootDir, file, "")
+		CreateFile(rootDir, file, "")
 	}
 
 	return rootDir
@@ -254,13 +253,13 @@ func createNestedDir() string {
 	//    ├─ 0.txt
 	//    └─ 1.txt
 
-	rootDir := testUtils.CreateTmpDir()
+	rootDir := CreateTmpDir()
 
 	for _, subDir := range []string{"/a/a", "/b/a"} {
-		testUtils.CreateDir(rootDir + subDir)
+		CreateDir(rootDir + subDir)
 	}
 	for _, file := range []string{"/a/a/0.txt", "/a/a/1.txt", "/b/0.txt", "/b/1.txt", "/b/a/1.txt"} {
-		testUtils.CreateFile(rootDir, file, "")
+		CreateFile(rootDir, file, "")
 	}
 	return rootDir
 }
@@ -270,10 +269,10 @@ func createEqualFileAndDir() string {
 	// └─ a/ <- directory
 	//    └─ a <- file
 
-	rootDir := testUtils.CreateTmpDir()
+	rootDir := CreateTmpDir()
 
-	testUtils.CreateDir(rootDir + "/a")
-	testUtils.CreateFile(rootDir, "/a/a", "")
+	CreateDir(rootDir + "/a")
+	CreateFile(rootDir, "/a/a", "")
 
 	return rootDir
 }
