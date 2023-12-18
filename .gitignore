@@ -24,4 +24,5 @@ go.work
 .idea
 
 # Installer
-/build/output
+/build/installer/output
+/build/installer/repositories

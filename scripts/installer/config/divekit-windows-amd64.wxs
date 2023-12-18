@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="*" Name="Divekit DIVEKIT_VERSION" Language="1033" Version="DIVEKIT_VERSION" Manufacturer="ArchiLab"
+             UpgradeCode="ee79fe88-9e28-46ad-88cf-18a87effbfda">
+        <Package Compressed="yes" Manufacturer="ArchiLab" InstallScope="perMachine" InstallerVersion="500"
+                 Platform="x64"/>
+        <MajorUpgrade
+                DowngradeErrorMessage="The version you're attempting to install is older than the installed version."
+                AllowDowngrades="no" AllowSameVersionUpgrades="no"/>
+        <MediaTemplate EmbedCab="yes"/>
+        <WixVariable Id="WixUILicenseRtf" Value="assets/UIResources/LICENSE.rtf"/>
+        <WixVariable Id="WixUIBannerBmp" Value="assets/UIResources/banner.bmp"/>
+        <WixVariable Id="WixUIDialogBmp" Value="assets/UIResources/dialog.bmp"/>
+        <WixVariable Id="WixUIExclamationIco" Value="assets/UIResources/icon.ico"/>
+        <WixVariable Id="WixUIInfoIco" Value="assets/UIResources/icon.ico"/>
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Component Id="Path" Guid="42401c35-0cb2-4152-8d96-a824e9b183e1">
+                <Environment Id="PATH" Name="PATH" Value="[DIVEKIT_INSTALL_DIR]\bin" Permanent="no" Part="last"
+                             Action="set" System="no"/>
+            </Component>
+
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Name="Divekit" Id="DIVEKIT_INSTALL_DIR">
+                    <Directory Name="bin" Id="DIR_BIN">
+                        <Component Win64="yes" Id="CMP_DIVEKIT_EXE" Guid="544dc594-4c82-4a13-8359-00cbe756f981">
+                            <File Id="FILE_DIVEKIT_EXE" Source="divekit.exe"/>
+                        </Component>
+                    </Directory>
+                    <Directory Name="repositories" Id="DIVEKIT_REPO_DIR">
+                        <Directory Name="divekit-automated-repo-setup" Id="ARS_DIR"/>
+                        <Directory Name="divekit-repo-editor" Id="REPO_EDITOR_DIR"/>
+                    </Directory>
+                </Directory>
+
+                <Directory Id="ProgramMenuFolder">
+                    <Directory Id="DIR_STARTMENUDIR" Name="Divekit">
+                        <Component Win64="yes" Id="CMP_UNINSTALL_SHORTCUT" Guid="f3fccf8b-d1fb-4026-8baf-0f1c2778d4d5">
+                            <RemoveFolder Id="DIR_STARTMENUDIR" On="uninstall"/>
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="installed"
+                                           Type="integer" Value="1" KeyPath="yes"/>
+                            <Shortcut Id="UninstallProduct" Name="Uninstall Divekit"
+                                      Description="Uninstalls the application" Target="[System64Folder]msiexec.exe"
+                                      Arguments="/x [ProductCode]"/>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+        <Feature Id="FileToInstallFeature" Title="Divekit" Level="1" ConfigurableDirectory="DIVEKIT_INSTALL_DIR">
+            <ComponentRef Id="CMP_DIVEKIT_EXE"/>
+            <ComponentGroupRef Id="CMP_ARS_DIR"/>
+            <ComponentGroupRef Id="CMP_REPO_EDITOR_DIR"/>
+            <ComponentRef Id="Path"/>
+        </Feature>
+        <Feature Id="ShortcutsFeature" Title="Start Menu Shortcuts" Level="1">
+            <ComponentRef Id="CMP_UNINSTALL_SHORTCUT"/>
+        </Feature>
+        <UIRef Id="WixUI_FeatureTree"/>
+    </Product>
+</Wix>
