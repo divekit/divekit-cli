@@ -3,285 +3,617 @@ package patch
 import (
 	"bytes"
 	"divekit-cli/cmd"
+	"divekit-cli/divekit/origin"
+	"divekit-cli/utils/api"
+	"divekit-cli/utils/errorHandling"
 	"divekit-cli/utils/fileUtils"
-	"encoding/json"
+	"divekit-cli/utils/logUtils"
+	"fmt"
 	"github.com/apex/log"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/xanzy/go-gitlab"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"unicode/utf8"
 )
 
+var (
+	client        *gitlab.Client    // Interacts with the GitLab API
+	repositoryIds map[string]string // Access an id by using a repository name as key
+)
+
 const (
-	originRepo = "divekit-origin-test-repo"
-	home       = "C:/Users/Thomas/Documents/Praxisprojekt/Git"
+	originRepoName = "divekit-origin-test-repo"
+	homePath       = "C:/Users/Thomas/Documents/Praxisprojekt/Git"
 )
 
 func TestPatch(t *testing.T) {
 	testCases := []struct {
-		name      string
-		arguments PatchArguments // input
+		name           string
+		arguments      PatchArguments  // input
+		generatedFiles []GeneratedFile // expected
+		error          error           // expected
 	}{
 		{
-			"patch a file",
+			"[dry run] patch with no args",
 			PatchArguments{
-				true,
+				false,
 				"",
-				originRepo,
-				home,
+				"",
+				"",
+				"",
+				[]string{},
+			},
+			[]GeneratedFile{},
+			&cmd.InvalidArgsError{},
+		},
+		{
+			"[dry run] patch only with a patch file arg",
+			PatchArguments{
+				false,
+				"",
+				"",
+				"",
 				"",
 				[]string{"ProjectApplication.java"},
 			},
+			[]GeneratedFile{},
+			&origin.OriginRepoError{},
 		},
 		{
-			"patch two wildcard files",
+			"[dry run] patch with a non existing patch file arg",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				homePath,
+				"",
+				[]string{},
+			},
+			[]GeneratedFile{},
+			&PatchFileError{},
+		},
+		{
+			"[dry run] patch with an invalid home path",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				"invalid_path",
+				"",
+				[]string{"ProjectApplication.java"},
+			},
+			[]GeneratedFile{},
+			&fileUtils.InvalidPathError{},
+		},
+		{
+			"[dry run] patch with an invalid origin repo name",
+			PatchArguments{
+				false,
+				"",
+				"invalid_name",
+				homePath,
+				"",
+				[]string{"ProjectApplication.java"},
+			},
+			[]GeneratedFile{},
+			&fileUtils.InvalidPathError{},
+		},
+		{
+			"[dry run] patch with an invalid log level",
+			PatchArguments{
+				false,
+				"invalid_level",
+				originRepoName,
+				homePath,
+				"",
+				[]string{"ProjectApplication.java"},
+			},
+			[]GeneratedFile{},
+			&logUtils.LogLevelError{},
+		},
+		{
+			"[dry run] patch with an invalid distribution name",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				homePath,
+				"invalid_distribution",
+				[]string{"ProjectApplication.java"},
+			},
+			[]GeneratedFile{},
+			&origin.OriginRepoError{},
+		},
+		{
+			"[dry run] patch a file",
 			PatchArguments{
 				true,
 				"",
-				originRepo,
-				home,
-				"test",
-				[]string{"$PersonClass$RegistrationUseCases.java", "$ObjectClass$CatalogUseCases.java"},
+				originRepoName,
+				homePath,
+				"",
+				[]string{"ProjectApplication.java"},
 			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					[]string{},
+				},
+			},
+			nil,
 		},
 		{
-			"patch an uxf file",
+			"[dry run] patch a wildcard file",
 			PatchArguments{
 				true,
 				"",
-				originRepo,
-				home,
+				originRepoName,
+				homePath,
 				"test",
-				[]string{"E01Solution.uxf"},
+				[]string{"$DonationClassName$.json"},
 			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
+					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
+					[]string{},
+				},
+			},
+			nil,
 		},
 		{
-			"patch a wildcard uxf files",
+			"[dry run] patch two wildcard files with variations in test group",
 			PatchArguments{
 				true,
 				"",
-				originRepo,
-				home,
+				originRepoName,
+				homePath,
 				"test",
-				[]string{"Test$PersonClass$.uxf"},
+				[]string{"$E04M01Name$_E04M01.java", "$E07M03Name$_E07M03.java"},
 			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"src/main/java/thkoeln/st/basics/exercise/E07Lists/CanBalance.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
+					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
+				},
+			},
+			nil,
+		},
+		{
+			"[dry run] patch two wildcard files with variations in code group",
+			PatchArguments{
+				true,
+				"",
+				originRepoName,
+				homePath,
+				"",
+				[]string{"$E04M01Name$_E04M01.java", "$E07M03Name$_E07M03.java"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					[]string{},
+				},
+			},
+			nil,
+		},
+		{
+			"[dry run] patch an uxf file",
+			PatchArguments{
+				true,
+				"",
+				originRepoName,
+				homePath,
+				"test",
+				[]string{"LDM.uxf"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"LDM.jpg",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
+					"LDM.jpg",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"LDM.uxf",
+					[]string{},
+				},
+				{
+					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
+					"LDM.uxf",
+					[]string{},
+				},
+			},
+			nil,
+		},
+		{
+			"patch a file to one repository",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				homePath,
+				"test",
+				[]string{"$E04M01Name$_E04M01.java"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					[]string{},
+				},
+			},
+			nil,
+		},
+		{
+			"patch two wildcard files with variations to multiple repositories",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				homePath,
+				"",
+				[]string{"$E06M05Name$_E06M05.java", "$E02M04Name$_E02M04.java"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/java/thkoeln/st/basics/exercise/E02Conditions/GetDayByNumber.java",
+					[]string{},
+				},
+			},
+			nil,
+		},
+		{
+			"patch an uxf file to multiple repositories",
+			PatchArguments{
+				false,
+				"",
+				originRepoName,
+				homePath,
+				"",
+				[]string{"E2.uxf"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					[]string{},
+				},
+				{
+					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
+					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					[]string{},
+				},
+			},
+			nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			dryRunActive := testCase.arguments.dryRun
+			generatedFiles := testCase.generatedFiles
+			dryRunFlag := testCase.arguments.dryRun
+			distributionFlag := testCase.arguments.distribution
+
+			latestCommits := getLatestCommits(t, generatedFiles, dryRunFlag)
+			deleteFilesFromRepository(t, generatedFiles, dryRunFlag)
 			_, err := executePatch(testCase.arguments)
 
-			assert.NoError(t, err)
-			checkGeneratedFiles(t, testCase.arguments)
-			if !dryRunActive {
-				checkPushedFiles()
+			checkErrorType(t, testCase.error, err)
+			if err == nil {
+				matchedFiles := matchGeneratedFiles(t, generatedFiles, distributionFlag)
+				checkFileContent(t, matchedFiles)
+				checkPushedFiles(t, matchedFiles, dryRunFlag)
 			}
+			revertCommmits(t, latestCommits, dryRunFlag)
 		})
 	}
 }
 
-// Check if the generated files have been successfully created
-func checkGeneratedFiles(t *testing.T, args PatchArguments) {
-	// These constants are required to determine, for instance, the expected file names
-	// e.g. $PersonClass$RegistrationUseCases.java
-	const delimiter = "$"
-	const suffix = "Class"
+// getLatestCommits searches for the latest commits of each repository.
+// The latest commit of a repository is needed to revert the changes after the test.
+func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive bool) []Commit {
+	if dryRunActive {
+		t.Log("Dry Run flag set: SKIP SEARCHING for latest commits")
+		return nil
+	}
+	var result []Commit
 
-	expectedFileNames := getGeneratedFileNames(args.patchFiles, delimiter, suffix)
-	outputDir := getGeneratedARSOutputDir(args)
-	foundPaths, _ := fileUtils.FindAnyFilesInDirRecursively(outputDir)
-	foundFileNames := fileUtils.GetBaseNames(foundPaths...)
-
-	assert.ElementsMatch(t, expectedFileNames, foundFileNames, "expected files do not match the found files")
-	checkFileContent(t, foundPaths, delimiter)
-}
-
-func checkFileContent(t *testing.T, foundPaths []string, delimiter string) {
-	for _, foundPath := range foundPaths {
-		content, err := os.ReadFile(foundPath)
+	// Collect the latest commits of each repository
+	for _, generatedFile := range removeDuplicates(generatedFiles) {
+		repositoryId := repositoryIds[generatedFile.RepoName]
+		commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
 		if err != nil {
-			log.Fatalf("could not read the file: %s", foundPath)
+			t.Fatalf("could not get the commits: %v", err)
 		}
 
-		// Generated files should be UTF-8 encoded in order to test their content
-		if !utf8.Valid(content) {
-			log.Warn("The file " + fileUtils.GetBaseName(foundPath) + " is not UTF-8 encoded => " +
-				"Skipping content check.")
-			continue
-		}
-
-		// Generated files should not contain any delimiters,
-		// because delimiters indicate that wildcards have not been substituted correctly
-		assert.NotContainsf(t, string(content), delimiter, "%s contains a %s delimiter",
-			fileUtils.GetBaseName(foundPath), delimiter)
-	}
-}
-
-// getGeneratedFileNames returns generated file names for the given patch files.
-// It supports wildcard names, such as obtaining `CustomerRegistrationUseCases.java`, `UserRegistrationUseCases.java`
-// etc. for `$PersonClass$RegistrationUseCases.java`.
-// Also, it considers special file extensions, such as `.uxf`, which means additional files gets generated.
-func getGeneratedFileNames(patchFiles []string, delimiter string, suffix string) []string {
-	var result []string
-
-	for _, patchFile := range patchFiles {
-		fileNames := getFileNames(patchFile, delimiter, suffix)
-		additionalFileNames := getAdditionalFileNames(fileNames)
-
-		result = append(result, fileNames...)
-		result = append(result, additionalFileNames...)
+		result = append(result, Commit{
+			commits[0].ID,
+			repositoryId,
+		})
 	}
 
 	return result
 }
 
-func getFileNames(patchFile string, delimiter string, suffix string) []string {
-	individualRepositoriesFile := ARSRepo.IndividualizationConfig.Dir + "/individual_repositories.json"
-
-	// Check if the patch file contains any delimiters.
-	// If not, return the patch file multiplied by the number of members from the individual_repositories.json file
-	// e.g. ["file.java"] * 2 => ["file.java", "file.java"]
-	if !strings.Contains(patchFile, delimiter) {
-		return multiplyStringByN(patchFile, getNumberOfMembers(individualRepositoriesFile))
+// deleteFilesFromRepository deletes the generated files from the corresponding repositories.
+// The files should be deleted to test whether they are pushed correctly to the repositories.
+func deleteFilesFromRepository(t *testing.T, files []GeneratedFile, dryRunActive bool) {
+	if dryRunActive {
+		t.Log("Dry Run flag set: SKIP DELETING remote files")
+		return
 	}
 
-	// Get individual values from the individual_repositories.json file
-	objectName := getIndividualObjectName(patchFile, delimiter, suffix)
-	objectValues := getIndividualObjectValues(individualRepositoriesFile, objectName)
-
-	// Generate file names for each individual value
-	var generatedFileNames []string
-	for _, value := range objectValues {
-		generatedFileName := strings.ReplaceAll(patchFile, delimiter+objectName+suffix+delimiter, value)
-		generatedFileNames = append(generatedFileNames, generatedFileName)
-	}
-
-	return generatedFileNames
-}
-
-func getAdditionalFileNames(fileNames []string) []string {
-	var result []string
-
-	for _, fileName := range fileNames {
-		if strings.HasSuffix(fileName, ".uxf") {
-			result = append(result, strings.TrimSuffix(fileName, ".uxf")+".jpg")
+	for _, file := range files {
+		repositoryId := repositoryIds[file.RepoName]
+		filePath := file.RelFilePath
+		if err := api.DeleteFileByRepositoryId(client, repositoryId, filePath); err != nil {
+			t.Logf("The file %s does not exist in the repository `%s` (id: %s)", filePath, file.RepoName, repositoryId)
+		} else {
+			t.Logf("Deleted file %s from repository `%s` (id: %s)", filePath, file.RepoName, repositoryId)
 		}
 	}
-
-	return result
 }
 
-func getIndividualObjectName(fileName string, delimiter string, suffix string) string {
-	// Define a regular expression to match the name within delimiter...delimiter in the filename
-	re := regexp.MustCompile("\\" + delimiter + "(.+)\\" + delimiter)
-
-	// Find the submatches in the file name
-	matches := re.FindStringSubmatch(fileName)
-
-	// Check if any matches were found
-	if len(matches) < 2 {
-		log.Fatalf("could not match the filename: %s", fileName)
-	}
-
-	// Get the objectName and remove trailing suffixes
-	objectName := strings.TrimSuffix(matches[1], suffix)
-
-	return objectName
-}
-
-func getIndividualObjectValues(configPath string, objectName string) []string {
-	// Collect all values for the given objectName
-	var objectValues []string
-	for _, dataBlock := range unmarshalConfig(configPath) {
-		if objSelection, ok := dataBlock["individualSelectionCollection"].(map[string]interface{}); ok {
-			if objects, ok := objSelection["individualObjectSelection"].(map[string]interface{}); ok {
-				if objectValue, ok := objects[objectName].(string); ok {
-					objectValues = append(objectValues, objectValue)
-				}
-			}
-		}
-	}
-
-	return objectValues
-}
-
-func getNumberOfMembers(configPath string) int {
-	return len(unmarshalConfig(configPath))
-}
-
-func unmarshalConfig(configPath string) []map[string]interface{} {
-	// Validate the config path
-	if err := fileUtils.ValidateFilePath(configPath); err != nil {
-		log.Fatalf("could not validate the config path: %s", configPath)
-	}
-
-	// Read the config file
-	content, err := os.ReadFile(configPath)
-	if err != nil {
-		log.Fatalf("could not read the config file: %s", configPath)
-	}
-
-	// Unmarshal JSON data into a slice of DataBlock
-	var dataBlocks []map[string]interface{}
-	if err := json.Unmarshal(content, &dataBlocks); err != nil {
-		log.Fatalf("could not unmarshal the config file: %s", configPath)
-	}
-
-	return dataBlocks
-}
-func getGeneratedARSOutputDir(args PatchArguments) string {
-	if args.distribution != "" {
-		return ARSRepo.GeneratedLocalOutput.Dir + "/test"
-	}
-	return ARSRepo.GeneratedLocalOutput.Dir + "/code"
-}
-
-func multiplyStringByN(s string, n int) []string {
-	var result []string
-
-	for i := 0; i < n; i++ {
-		result = append(result, s)
-	}
-
-	return result
-}
-
-// check if the generated files have been pushed to the corresponding repositories
-func checkPushedFiles() {
-
-}
+// executePatch executes the patch command with the given arguments and returns the output and the error
 func executePatch(args PatchArguments) (string, error) {
 	root := createCmd()
-	cmdWithArgs := strings.Split("patch "+args.toString(), " ")
+	patchWithArgs := append([]string{"patch"}, args.splitIntoStrings()...)
 
 	buffer := new(bytes.Buffer)
 	root.SetOut(buffer)
 	root.SetErr(buffer)
-	root.SetArgs(cmdWithArgs)
+	root.SetArgs(patchWithArgs)
 
 	err := root.Execute()
 	output := buffer.String()
-	println(output)
 
 	return output, err
+}
+
+// checkErrorType checks if the expected error type matches with the actual error type
+func checkErrorType(t *testing.T, expected error, actual error) {
+	errorHandling.IsErrorType(t, expected, actual)
+}
+
+// matchGeneratedFiles checks if the found file paths match with the expected files and
+// returns a slice of MatchedFiles, which is required for further checks.
+func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distribution string) []MatchedFile {
+	var result []MatchedFile
+	var expectedFilePaths []string
+	actualFilePaths := getGeneratedFilePaths(t, distribution)
+
+	for _, expectedFile := range expectedFiles {
+		expectedFilePath := getGeneratedOutputDir(t, distribution) + "/" + expectedFile.RepoName + "/" + expectedFile.RelFilePath
+		expectedFilePaths = append(expectedFilePaths, expectedFilePath)
+		matchedFile := newMatchedFile(t, expectedFile, expectedFilePath)
+		result = append(result, matchedFile)
+	}
+
+	require.ElementsMatchf(t, expectedFilePaths, actualFilePaths, "The expected file paths do not match with the found file paths")
+
+	return result
+}
+
+// checkFileContent checks if the content of the generated files is correct.
+func checkFileContent(t *testing.T, files []MatchedFile) {
+	for _, file := range files {
+		bytes, err := os.ReadFile(file.FilePath)
+		if err != nil {
+			t.Fatalf("could not read the file: %s", file.FileName)
+		}
+
+		// Generated files should be UTF-8 encoded in order to check their content
+		if !utf8.Valid(bytes) {
+			t.Logf("The file %s is not UTF-8 encoded: SKIPPING content check for this file.", file.FileName)
+			continue
+		}
+
+		content := string(bytes)
+
+		// Any file should contain at least one character
+		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.FileName)
+
+		// Asserts that the content does not contain any delimiters,
+		// because they indicate that wildcards have not been substituted correctly
+		delimiter := "$"
+		assert.NotContainsf(t, content, delimiter, "The file %s contains a %s delimiter", file.FileName, delimiter)
+
+		// Asserts that the content contains all keywords
+		for _, keyword := range file.Keywords {
+			assert.Containsf(t, content, keyword, "The file %s does not contain the keyword: %s", file.FileName, keyword)
+		}
+	}
+}
+
+// checkPushedFiles checks if the generated files have been pushed correctly to the corresponding repositories.
+func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool) {
+	if dryRunActive {
+		t.Log("Dry Run flag set: SKIPPING remote repository check")
+		return
+	}
+
+	for _, localFile := range localFiles {
+		currentId := repositoryIds[localFile.RepoName]
+		remoteFile, err := api.GetFileByRepositoryId(client, currentId, localFile.RelFilePath)
+
+		if remoteFileExists := assert.NoErrorf(t, err, "Could not get file %s from repository `%s` (id: %s)",
+			localFile.RelFilePath, localFile.RepoName, currentId); !remoteFileExists {
+			continue
+		}
+
+		assert.Equalf(t, localFile.SHA256, remoteFile.SHA256,
+			"The hash of the locally generated file does not match with that of the remote file.\n"+
+				"The file may not have been pushed correctly to the repository. `%s` (id: %s)\n"+
+				"Provided file: %s", localFile.RepoName, currentId, localFile.FilePath)
+	}
+}
+
+// revertCommits reverts the commits that have been made during the test.
+func revertCommmits(t *testing.T, initialCommits []Commit, dryRunActive bool) {
+	if dryRunActive {
+		t.Log("Dry Run flag set: SKIP REVERTING commits")
+		return
+	}
+
+	for _, initialCommit := range initialCommits {
+		revertCommitsUntilInitialId(t, initialCommit.repositoryId, initialCommit.id)
+	}
+
+	t.Log("Reverted commits")
+}
+
+func revertCommitsUntilInitialId(t *testing.T, repositoryId string, initialCommitId string) {
+	commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
+	if err != nil {
+		t.Fatalf("could not get the commits: %v", err)
+	}
+
+	for _, commit := range commits {
+		if commit.ID == initialCommitId {
+			break // Stop reverting commits if the initial commit has been reached
+		}
+
+		if err := api.RevertCommitByRepositoryIdAndCommitId(client, repositoryId, commit.ID); err != nil {
+			t.Fatalf("could not revert commit %s from repository with the id %s", commit.ID, repositoryId)
+		}
+	}
+}
+
+func getGeneratedFilePaths(t *testing.T, distribution string) []string {
+	outputDir := getGeneratedOutputDir(t, distribution)
+	foundPaths, err := fileUtils.FindAnyFilesInDirRecursively(outputDir)
+	require.NoErrorf(t, err, "could not find any files in the directory %s", outputDir)
+
+	return fileUtils.UnifyPaths(foundPaths)
+}
+func getGeneratedOutputDir(t *testing.T, distribution string) string {
+	if ARSRepo == nil {
+		t.Fatalf("could not find the generated output directory: ARSRepo is nil")
+	}
+
+	dir := fileUtils.UnifyPath(ARSRepo.GeneratedLocalOutput.Dir)
+	if dir == "" {
+		t.Fatalf("could not find the generated output directory: the dir is empty")
+	}
+
+	if distribution == "test" {
+		return dir + "/test"
+	}
+
+	return dir + "/code"
 }
 func createCmd() *cobra.Command {
 	rootCmd := cmd.NewRootCmd()
 	cmd.SetCmdFlags(rootCmd)
 
 	patchCmd := NewPatchCmd()
-	initVariables()
+	initFlags()
 	setCmdFlags(patchCmd)
 	rootCmd.AddCommand(patchCmd)
 
 	return rootCmd
 }
 
+// Commit is used to revert the commits after a test
+type Commit struct {
+	id           string
+	repositoryId string
+}
 type PatchArguments struct {
 	dryRun       bool
 	logLevel     string
@@ -289,6 +621,17 @@ type PatchArguments struct {
 	home         string
 	distribution string
 	patchFiles   []string
+}
+
+func (p PatchArguments) splitIntoStrings() []string {
+	result := strings.Split(p.toString(), " ")
+
+	// Return an empty slice if no arguments defined
+	if len(result) == 1 && result[0] == "" {
+		return []string{}
+	}
+
+	return result
 }
 
 func (p PatchArguments) toString() string {
@@ -311,25 +654,94 @@ func (p PatchArguments) toString() string {
 	if len(p.patchFiles) > 0 {
 		result += strings.Join(p.patchFiles, " ")
 	}
+
 	return result
 }
 
-//func TestPreRun(t *testing.T) {
-//	// todo
-//	//patch = &cobra.Command{Use: "root", RunE: PreRun}
-//}
-//
-//func TestDefinePatchFiles(t *testing.T) {
-//	// todo
-//	//definePatchFiles()
-//}
-//
-//func TestCopySavedIndividualizationFileToARS(t *testing.T) {
-//	// todo
-//	//copySavedIndividualizationFileToARS()
-//}
-//
-//func TestCopyLocallyGeneratedFilesToPatchTool(t *testing.T) {
-//	// todo
-//	//copyLocallyGeneratedFilesToPatchTool()
-//}
+type GeneratedFile struct {
+	RepoName    string
+	RelFilePath string
+	Keywords    []string
+}
+
+func removeDuplicates(generatedFiles []GeneratedFile) []GeneratedFile {
+	keys := make(map[string]bool)
+	var result []GeneratedFile
+
+	for _, generatedFile := range generatedFiles {
+		if _, value := keys[generatedFile.RepoName]; !value {
+			keys[generatedFile.RepoName] = true
+			result = append(result, generatedFile)
+		}
+	}
+
+	return result
+}
+
+type MatchedFile struct {
+	FileName    string
+	FilePath    string
+	RelFilePath string
+	RepoName    string
+	SHA256      string
+	Keywords    []string
+}
+
+func newMatchedFile(t *testing.T, generatedFile GeneratedFile, filePath string) MatchedFile {
+	return MatchedFile{
+		fileUtils.GetBaseName(generatedFile.RelFilePath),
+		filePath,
+		generatedFile.RelFilePath,
+		generatedFile.RepoName,
+		fileUtils.GetSHA256(filePath),
+		generatedFile.Keywords,
+	}
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	e := m.Run() // run the tests
+	os.Exit(e)   // report the exit code
+}
+
+func setup() {
+	loadEnv()
+	host := os.Getenv("HOST")
+	token := os.Getenv("API_TOKEN")
+	codeGroupId := os.Getenv("CODE_GROUP_ID")
+	testGroupId := os.Getenv("TEST_GROUP_ID")
+
+	var err error
+	if client, err = api.NewGitlabClient(host, token); err != nil {
+		log.Fatalf("", err)
+	}
+	initRepositoryVariables(codeGroupId, testGroupId)
+}
+func loadEnv() {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Fatalf("Error loading .env:", err)
+	}
+}
+
+func initRepositoryVariables(codeGroupId string, testGroupId string) {
+	repositoryIds = make(map[string]string)
+
+	codeRepositories := getRepositoriesByGroupId(codeGroupId)
+	testRepositories := getRepositoriesByGroupId(testGroupId)
+	repositories := append(codeRepositories, testRepositories...)
+
+	for _, repository := range repositories {
+		id := fmt.Sprintf("%d", repository.ID)
+		repositoryIds[repository.Name] = id
+	}
+}
+
+func getRepositoriesByGroupId(groupId string) []*gitlab.Project {
+	projects, err := api.GetRepositoryByGroupId(client, groupId)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("could not get projects with group id %s: %v", groupId, err))
+	}
+
+	return projects
+}

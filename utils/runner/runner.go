@@ -44,13 +44,11 @@ func executeCmd(dirPath string) error {
 	cmd.Dir = dirPath
 
 	if err := cmd.Run(); err != nil {
-		log.Errorf("Error running 'npm start': %v", err)
-		return err
+		return fmt.Errorf("error running 'npm start': %v", err)
 	}
 
 	if err := stderrBuffer.String(); err != "" {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		return fmt.Errorf(err)
+		return fmt.Errorf("error running 'npm start': %v", err)
 	}
 
 	return nil

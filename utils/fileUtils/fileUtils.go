@@ -1,6 +1,7 @@
 package fileUtils
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
@@ -9,13 +10,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
 // Searches recursively for full path(es) of a given filename. Returns a 1-elem
 // array if there is just one occurrence, or an array with several elements otherwise.
-func FindFilesInDirRecursively(rootDir string, justTheFileNames ...string) ([]string, error) {
+func FindFilesInDirRecursively(rootDir string, justTheFileName string) ([]string, error) {
 	var targetPaths []string
 
 	err := filepath.Walk(rootDir, func(currentPath string, info os.FileInfo, err error) error {
@@ -23,13 +23,13 @@ func FindFilesInDirRecursively(rootDir string, justTheFileNames ...string) ([]st
 			return err
 		}
 		// Check if the current file matches the target file name
-		if info.Mode().IsRegular() && slices.Contains(justTheFileNames, info.Name()) {
+		if info.Mode().IsRegular() && info.Name() == justTheFileName {
 			targetPaths = append(targetPaths, currentPath)
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error searching for files: %v", err)
+		return nil, fmt.Errorf("Error searching for files: %w", err)
 	}
 	return targetPaths, nil
 }
@@ -48,20 +48,20 @@ func FindAnyFilesInDirRecursively(rootDir string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Error searching for files: %v", err)
+		return nil, fmt.Errorf("Error searching for files: %w", err)
 	}
 	return targetPaths, nil
 }
 
 // same as FindFilesInDirRecursively, but without the recursive descent
-func FindFilesInDir(rootDir string, justTheFileNames ...string) ([]string, error) {
+func FindFilesInDir(rootDir string, justTheFileName string) ([]string, error) {
 	files, err := ioutil.ReadDir(rootDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read directory: %v", err)
+		return nil, err
 	}
 	filePaths := make([]string, 0)
 	for _, file := range files {
-		if !file.IsDir() && slices.Contains(justTheFileNames, file.Name()) {
+		if !file.IsDir() && file.Name() == justTheFileName {
 			filePaths = append(filePaths, filepath.Join(rootDir, file.Name()))
 			break
 		}
@@ -80,13 +80,15 @@ func TransformIntoRelativePaths(root string, absPath string) (string, error) {
 }
 
 func CopyFile(srcFileName, destDirName string) error {
-	// If srcFileName is not a valid file then return an error
-	if file, err := os.Stat(srcFileName); file.IsDir() || err != nil {
-		return &fs.PathError{
-			Op:   "CopyFile",
-			Path: srcFileName,
-			Err:  fmt.Errorf("invalid file: %v", err),
-		}
+	var file os.FileInfo
+	var err error
+
+	if file, err = os.Stat(srcFileName); err != nil {
+		return err
+	}
+
+	if file.IsDir() {
+		return fmt.Errorf("%s can not be a directory", srcFileName)
 	}
 
 	srcFile, err := os.Open(srcFileName)
@@ -116,12 +118,12 @@ func CopyFile(srcFileName, destDirName string) error {
 func CopyAllFilesInDir(srcDirName, destDirName string) error {
 	return filepath.Walk(srcDirName, func(srcPath string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("failed to access path %s: %v", srcPath, err)
+			return fmt.Errorf("failed to access path %s: %w", srcPath, err)
 		}
 
 		relPath, err := filepath.Rel(srcDirName, srcPath)
 		if err != nil {
-			return fmt.Errorf("failed to get relative path for %s: %v", srcPath, err)
+			return fmt.Errorf("failed to get relative path for %s: %w", srcPath, err)
 		}
 
 		destPath := filepath.Join(destDirName, relPath)
@@ -132,18 +134,18 @@ func CopyAllFilesInDir(srcDirName, destDirName string) error {
 
 		srcFile, err := os.Open(srcPath)
 		if err != nil {
-			return fmt.Errorf("failed to open source file %s: %v", srcPath, err)
+			return fmt.Errorf("failed to open source file %s: %w", srcPath, err)
 		}
 		defer srcFile.Close()
 
 		destFile, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode())
 		if err != nil {
-			return fmt.Errorf("failed to create destination file %s: %v", destPath, err)
+			return fmt.Errorf("failed to create destination file %s: %w", destPath, err)
 		}
 		defer destFile.Close()
 
 		if _, err := io.Copy(destFile, srcFile); err != nil {
-			return fmt.Errorf("failed to copy file content from %s to %s: %v", srcPath, destPath, err)
+			return fmt.Errorf("failed to copy file content from %s to %s: %w", srcPath, destPath, err)
 		}
 
 		return nil
@@ -165,13 +167,16 @@ func ValidateDirPath(dirPath string) error {
 // Check if a given path exists (and is a directory or a file, depending on shouldBeDir)
 func ValidatePath(shouldBeDir bool, path string) error {
 	log.Debug("utils.ValidatePath()")
-	fileInfo, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("%s does not exist", path)
+	var fileInfo os.FileInfo
+	var err error
+
+	if fileInfo, err = os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s does not exist: %w", path, err)
+		}
+		return fmt.Errorf("Error while validating path: %w", err)
 	}
-	if err != nil {
-		return fmt.Errorf("Error checking for %s", err)
-	}
+
 	if shouldBeDir != fileInfo.Mode().IsDir() {
 		errorMessage := "%s is a "
 		if shouldBeDir {
@@ -186,34 +191,43 @@ func ValidatePath(shouldBeDir bool, path string) error {
 }
 
 // Validate a list of files
-func ValidateAllFilePaths(paths ...string) []error {
+func ValidateAllFilePaths(paths ...string) error {
 	log.Debug("utils.ValidateAllFilePaths()")
 	return ValidateAllPaths(false, paths...)
 }
 
 // Validate a list of directories
-func ValidateAllDirPaths(paths ...string) []error {
+func ValidateAllDirPaths(paths ...string) error {
 	log.Debug("utils.ValidateAllDirPaths()")
 	return ValidateAllPaths(true, paths...)
 }
 
 // Validate a list of paths (files or directories)
-func ValidateAllPaths(shouldBeDir bool, paths ...string) []error {
+func ValidateAllPaths(shouldBeDir bool, paths ...string) error {
 	log.Debug("utils.ValidateAllPaths()")
-	var errorsList []error
+	var errMsg string
 	for _, path := range paths {
 		err := ValidatePath(shouldBeDir, path)
 		if err != nil {
-			errorsList = append(errorsList, err)
+			errMsg += "\n" + err.Error()
 		}
 	}
-	return errorsList
+
+	if errMsg != "" {
+		return &InvalidPathError{errMsg}
+	}
+
+	return nil
 }
 
 func FindUniqueFileWithPrefix(dir, prefix string) (string, error) {
+	if prefix == "" {
+		return "", fmt.Errorf("Prefix cannot be empty")
+	}
+
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return "", fmt.Errorf("Error reading directory: %v", err)
+		return "", fmt.Errorf("Error reading directory: %w", err)
 	}
 
 	matchingFiles := []string{}
@@ -234,21 +248,21 @@ func FindUniqueFileWithPrefix(dir, prefix string) (string, error) {
 	return filepath.Join(dir, matchingFiles[0]), nil
 }
 
-func ListSubfolderNames(folderPath string) ([]string, error) {
+func ListSubFolderNames(folderPath string) ([]string, error) {
 	files, err := ioutil.ReadDir(folderPath)
 	if err != nil {
 		return nil, err
 	}
 
-	subfolders := make([]string, 0)
+	subFolders := make([]string, 0)
 
 	for _, file := range files {
 		if file.IsDir() {
-			subfolders = append(subfolders, file.Name())
+			subFolders = append(subFolders, file.Name())
 		}
 	}
 
-	return subfolders, nil
+	return subFolders, nil
 }
 
 func DeepCopy(srcObject, destinationObject interface{}) error {
@@ -312,7 +326,7 @@ func DeleteDir(path string) {
 func ToRelPath(absPath string, root string) string {
 	relPath, err := filepath.Rel(root, absPath)
 	if err != nil {
-		log.Fatalf("Could not convert an absolute path into a relative path: %v", err)
+		log.Fatalf("Could not convert an absolute path into a relative path: ", err)
 	}
 	return UnifyPath(relPath)
 }
@@ -339,4 +353,35 @@ func GetBaseNames(paths ...string) []string {
 // UnifyPath replaces all `\\` with `/`, addressing the variations in path formats across different operating systems.
 func UnifyPath(path string) string {
 	return strings.ReplaceAll(path, "\\", "/")
+}
+
+func UnifyPaths(paths []string) []string {
+	var result []string
+	for _, path := range paths {
+		result = append(result, UnifyPath(path))
+	}
+
+	return result
+}
+func GetSHA256(filePath string) string {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("could not open the file %s: %v", filePath, err))
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		log.Fatalf("", err)
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+type InvalidPathError struct {
+	Msg string
+}
+
+func (e *InvalidPathError) Error() string {
+	return e.Msg
 }

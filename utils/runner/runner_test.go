@@ -1,11 +1,12 @@
 package runner
 
 import (
+	"divekit-cli/utils/errorHandling"
 	"divekit-cli/utils/fileUtils"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
-	"os/exec"
 	"testing"
 )
 
@@ -14,16 +15,37 @@ var jsonPath string // This path leads to a temporary directory with a simulated
 func TestRunNPMStart(t *testing.T) {
 	testCases := []struct {
 		name       string
-		path       string // input: path leads to a simulated package.json file and can be empty to raise an error.
+		path       string // input (path leads to a simulated package.json file and can be empty to raise an error.)
 		dryRunFlag bool   // input
 		executed   bool   // expected
 		error      error  // expected
 	}{
-		{"True dryRunflag should skip execution", jsonPath, true, false, nil},
-		{"False dryRunflag should execute", jsonPath, false, true, nil},
-		{"True dryRunflag with no path should skip execution", "", true, false, nil},
-		{"False dryRunflag with no path should execute and fail", "", false, true,
-			&exec.ExitError{}},
+		{
+			"True dryRunflag should skip execution",
+			jsonPath,
+			true,
+			false,
+			nil,
+		},
+		{
+			"False dryRunflag should execute",
+			jsonPath,
+			false,
+			true,
+			nil,
+		},
+		{"True dryRunflag with no path should skip execution",
+			"",
+			true,
+			false,
+			nil,
+		},
+		{"False dryRunflag with no path should execute and fail",
+			"",
+			false,
+			true,
+			fmt.Errorf(""),
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -32,7 +54,7 @@ func TestRunNPMStart(t *testing.T) {
 
 			executed, err := RunNPMStart(testCase.path, "")
 			assert.Equal(t, testCase.executed, executed)
-			assert.IsType(t, testCase.error, err)
+			errorHandling.IsErrorType(t, testCase.error, err)
 		})
 	}
 }
@@ -44,13 +66,13 @@ func TestRunNPMStartAlways(t *testing.T) {
 		error error  // expected
 	}{
 		{"Valid path should be successful", jsonPath, nil},
-		{"No path should fail", "", &exec.ExitError{}},
+		{"No path should fail", "", fmt.Errorf("")},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			err := RunNPMStartAlways(testCase.path, "")
-			assert.IsType(t, testCase.error, err)
+			errorHandling.IsErrorType(t, testCase.error, err)
 		})
 	}
 }

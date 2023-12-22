@@ -1,14 +1,10 @@
 package origin
 
-/**
- * This file an "object-oriented lookalike" implementation for the structure of the origin repository.
- */
-
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/ars"
-	"divekit-cli/utils/errorHandling"
 	"divekit-cli/utils/fileUtils"
+	"fmt"
 	"github.com/apex/log"
 	"path/filepath"
 )
@@ -33,38 +29,57 @@ type Distribution struct {
 	IndividualizationConfigFileName string
 }
 
-// This method is similar to a constructor in OOP
-func NewOriginRepo(originRepoName string) *OriginRepoType {
+func NewOriginRepo(originRepoName string) (*OriginRepoType, error) {
 	log.Debug("origin.InitOriginRepoPaths()")
 	originRepo := &OriginRepoType{}
 	originRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, originRepoName)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.RepoDir),
-		"The path to the origin repo is invalid")
-
-	originRepo.initDistributions()
-	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(originRepo.ARSConfig.Dir),
-		"The path to the ars config dir is invalid")
-	return originRepo
-}
-
-func InitOriginRepo(originRepoNameFlag string) {
-	if originRepoNameFlag != "" {
-		OriginRepo = NewOriginRepo(originRepoNameFlag)
+	if err := fileUtils.ValidateAllDirPaths(originRepo.RepoDir); err != nil {
+		return nil, err
 	}
+
+	if err := originRepo.initDistributions(); err != nil {
+		return nil, err
+	}
+
+	originRepo.ARSConfig.Dir = filepath.Join(originRepo.RepoDir, "ars-config_norepo")
+
+	if err := fileUtils.ValidateAllDirPaths(originRepo.ARSConfig.Dir); err != nil {
+		return nil, err
+	}
+
+	return originRepo, nil
 }
 
-func (originRepo *OriginRepoType) GetDistribution(distributionName string) *Distribution {
+func InitOriginRepo(originRepoNameFlag string) error {
+	if originRepoNameFlag == "" {
+		return &OriginRepoError{"The origin repo name flag is not defined"}
+	}
+
+	var err error
+	if OriginRepo, err = NewOriginRepo(originRepoNameFlag); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (originRepo *OriginRepoType) GetDistribution(distributionName string) (*Distribution, error) {
 	log.Debug("origin.GetDistribution()")
-	return originRepo.DistributionMap[distributionName]
+	if distribution := originRepo.DistributionMap[distributionName]; distribution != nil {
+		return distribution, nil
+	}
+
+	return nil, &OriginRepoError{fmt.Sprintf("The distribution '%s' does not exist", distributionName)}
 }
 
-func (originRepo *OriginRepoType) initDistributions() {
+func (originRepo *OriginRepoType) initDistributions() error {
 	log.Debug("origin.initDistributions()")
 	distributionRootDir := filepath.Join(originRepo.RepoDir, ".divekit_norepo/distributions")
 	originRepo.DistributionMap = make(map[string]*Distribution)
-	distributionFolders, err := fileUtils.ListSubfolderNames(distributionRootDir)
-	errorHandling.OutputAndAbortIfError(err, "The path to the distribution root dir is invalid")
+	distributionFolders, err := fileUtils.ListSubFolderNames(distributionRootDir)
+	if err != nil {
+		return fmt.Errorf("The path to the distribution root dir is invalid: %w", err)
+	}
 
 	for _, distributionName := range distributionFolders {
 		distributionFolder := filepath.Join(distributionRootDir, distributionName)
@@ -72,16 +87,24 @@ func (originRepo *OriginRepoType) initDistributions() {
 			Dir: distributionFolder,
 		}
 		originRepo.DistributionMap[distributionName] = &newDistribution
-		originRepo.initIndividualRepositoriesFile(distributionName, distributionFolder)
-		originRepo.initRepositorConfigFile(distributionName, distributionFolder)
+		if err := originRepo.initIndividualRepositoriesFile(distributionName, distributionFolder); err != nil {
+			return err
+		}
+		if err := originRepo.initRepositoryConfigFile(distributionName, distributionFolder); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
-func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionName string, distributionFolder string) {
+func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionName string, distributionFolder string) error {
 	log.Debug("origin.initIndividualRepositoriesFile()")
-	individualRepositoriesFilePath, err :=
-		fileUtils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
-	errorHandling.OutputAndAbortIfError(err, "The path to the individual_repositories file is invalid")
+	individualRepositoriesFilePath, err := fileUtils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
+	if err != nil {
+		return fmt.Errorf("The path to the individual_repositories file is invalid: %w", err)
+	}
+
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist
@@ -89,12 +112,18 @@ func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionNam
 		originRepo.DistributionMap[distributionName] = distribution
 	}
 	distribution.IndividualizationConfigFileName = individualRepositoriesFilePath
+
+	return nil
 }
 
-func (originRepo *OriginRepoType) initRepositorConfigFile(distributionName string, distributionFolder string) {
+func (originRepo *OriginRepoType) initRepositoryConfigFile(distributionName string, distributionFolder string) error {
 	log.Debug("origin.initRepositorConfigFile()")
 	// filename for NewRepositoryConfigFile is fixed, must be "repositoryConfig.json"
-	repositoryConfigFile := ars.NewRepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
+	repositoryConfigFile, err := ars.NewRepositoryConfigFile(filepath.Join(distributionFolder, "repositoryConfig.json"))
+	if err != nil {
+		return err
+	}
+
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist
@@ -102,4 +131,14 @@ func (originRepo *OriginRepoType) initRepositorConfigFile(distributionName strin
 		originRepo.DistributionMap[distributionName] = distribution
 	}
 	distribution.RepositoryConfigFile = repositoryConfigFile
+
+	return nil
+}
+
+type OriginRepoError struct {
+	Msg string
+}
+
+func (e *OriginRepoError) Error() string {
+	return e.Msg
 }

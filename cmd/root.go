@@ -3,7 +3,6 @@ package cmd
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/origin"
-	"divekit-cli/utils/errorHandling"
 	"divekit-cli/utils/logUtils"
 	"divekit-cli/utils/runner"
 	"github.com/apex/log"
@@ -11,7 +10,6 @@ import (
 )
 
 var (
-	// Flags
 	OriginRepoNameFlag string
 	LogLevelFlag       string
 	DivekitHomeFlag    string
@@ -21,8 +19,9 @@ var (
 
 func init() {
 	log.Debug("divekit.init()")
-	RootCmd.Version = "0.0.1" // todo: get version from git tag
 	SetCmdFlags(RootCmd)
+
+	RootCmd.Version = "0.0.1" // todo: get version from git tag
 }
 
 func NewRootCmd() *cobra.Command {
@@ -32,11 +31,12 @@ func NewRootCmd() *cobra.Command {
 		Long: `Divekit has been developed at TH Köln by the ArchiLab team (www.archi-lab.io) as
 universal tool to design, individualize, distribute, assess, patch, and evaluate
 realistic software engineering exercises as Git repos.`,
-		PersistentPreRun: persistentPreRun,
+		PersistentPreRunE: persistentPreRun,
 	}
 }
 
 func SetCmdFlags(cmd *cobra.Command) {
+	log.Debug("divekit.SetCmdFlags()")
 	cmd.PersistentFlags().BoolVarP(&runner.DryRunFlag, "dry-Run", "0", false,
 		"just tell what you would do, but don't do it yet")
 	cmd.PersistentFlags().StringVarP(&LogLevelFlag, "loglevel", "l", "info",
@@ -47,14 +47,35 @@ func SetCmdFlags(cmd *cobra.Command) {
 		"home directory of all the Divekit repos")
 }
 
-func persistentPreRun(cmd *cobra.Command, args []string) {
-	errorHandling.OutputAndAbortIfError(logUtils.DefineLoggingLevel(LogLevelFlag), "Could not define log level flag")
+func persistentPreRun(cmd *cobra.Command, args []string) error {
 	log.Debug("divekit.persistentPreRun()")
-	divekit.InitDivekitHomeDir(DivekitHomeFlag)
-	origin.InitOriginRepo(OriginRepoNameFlag)
+	if err := logUtils.DefineLoggingLevel(LogLevelFlag); err != nil {
+		log.Errorf("Could not define the logging level flag: %v", err)
+		return err
+	}
+
+	if err := divekit.InitDivekitHomeDir(DivekitHomeFlag); err != nil {
+		log.Errorf("Could not initialize the divekit home flag: %v", err)
+		return err
+	}
+
+	if err := origin.InitOriginRepo(OriginRepoNameFlag); err != nil {
+		log.Errorf("Could not initialize the origin repository: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func Execute() error {
 	log.Debug("divekit.Execute()")
 	return RootCmd.Execute()
+}
+
+type InvalidArgsError struct {
+	Msg string
+}
+
+func (e *InvalidArgsError) Error() string {
+	return e.Msg
 }

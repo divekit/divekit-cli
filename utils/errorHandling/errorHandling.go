@@ -2,37 +2,16 @@ package errorHandling
 
 import (
 	"bufio"
-	"divekit-cli/utils/fileUtils"
 	"fmt"
-	"github.com/apex/log"
+	"github.com/cockroachdb/errors"
+	"github.com/stretchr/testify/assert"
 	"os"
-	"runtime"
 	"strings"
+	"testing"
 )
 
-// Outputs a list of errors to stderr, and aborts the program if there are any errors
-func OutputAndAbortIfErrors(errorsList []error, msg string) {
-	log.Debug("errorHandling.OutputAndAbortIfErrors()")
-	for _, err := range errorsList {
-		outputWithErrorLocation(err, msg)
-	}
-
-	if len(errorsList) > 0 {
-		os.Exit(1)
-	}
-}
-
-// Outputs an error to stderr, if there is one, and aborts the program if so
-func OutputAndAbortIfError(err error, msg string) {
-	log.Debug("errorHandling.OutputAndAbortIfError()")
-	if err != nil {
-		outputWithErrorLocation(err, msg)
-		os.Exit(1)
-	}
-}
-
-// Confirm asks the user to confirm an action, and aborts if the user doesn't confirm
-func Confirm(prompt string) {
+// Confirm asks the user to confirm an action. The return value contains true if the action get confirmed.
+func Confirm(prompt string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Printf("%s\n\n(Please type \"yes\" to confirm, or anything else to abort):\n", prompt)
@@ -40,25 +19,20 @@ func Confirm(prompt string) {
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Printf("Error reading input: %v\n", err)
-		os.Exit(1)
+		return false
 	}
 
 	input = strings.TrimSpace(strings.ToLower(input))
 	if input != "yes" {
-		fmt.Println("Aborting")
-		os.Exit(1)
+		fmt.Println("input does not equal \"yes\"")
+		return false
 	}
+
+	return true
 }
 
-func outputWithErrorLocation(err error, msg string) {
-	location := getErrorLocation()
-	_, _ = fmt.Fprintf(os.Stderr, "Error at %s %s: %v\n", location, msg, err)
-}
-
-// getErrorLocation gets a filename along with the line where the error was triggered
-func getErrorLocation() string {
-	pc, _, _, _ := runtime.Caller(3)
-	file, line := runtime.FuncForPC(pc).FileLine(pc)
-	src := fileUtils.GetBaseName(fmt.Sprintf("%s:%v", file, line))
-	return src
+// IsErrorType asserts that the cause of the actual error is of the expected type
+func IsErrorType(t *testing.T, expected error, actual error) {
+	actualCause := errors.Cause(actual)
+	assert.IsTypef(t, expected, actualCause, "The cause of the actual error: %v", actualCause)
 }

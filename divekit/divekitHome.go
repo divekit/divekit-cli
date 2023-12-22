@@ -1,7 +1,6 @@
 package divekit
 
 import (
-	"divekit-cli/utils/errorHandling"
 	"divekit-cli/utils/fileUtils"
 	"github.com/apex/log"
 	"os"
@@ -15,14 +14,18 @@ var (
 // subcmd.DivekitHomeFlag is the home directory of all the Divekit repos. It is set by the
 // --home flag, the DIVEKIT_HOME environment variable, or the current working directory
 // (in this order).
-func InitDivekitHomeDir(divekitHomeFlag string) {
+func InitDivekitHomeDir(divekitHomeFlag string) error {
 	log.Debug("config.InitDivekitHomeDir()")
 	setDivekitHomeDirFromVariousSources(divekitHomeFlag)
-	errorHandling.OutputAndAbortIfErrors(fileUtils.ValidateAllDirPaths(DivekitHomeDir),
-		"Could not initialize divekit home dir")
+	if err := fileUtils.ValidateAllDirPaths(DivekitHomeDir); err != nil {
+		return err
+	}
+
 	log.WithFields(log.Fields{
 		"DivekitHomeDir": DivekitHomeDir,
 	}).Info("Setting Divekit Home Dir")
+
+	return nil
 }
 
 func setDivekitHomeDirFromVariousSources(divekitHomeFlag string) {
@@ -39,6 +42,6 @@ func setDivekitHomeDirFromVariousSources(divekitHomeFlag string) {
 	}
 	workingDir, _ := os.Getwd()
 	log.Info("Home dir set to current directory: " + workingDir)
+
 	DivekitHomeDir = workingDir
-	return
 }

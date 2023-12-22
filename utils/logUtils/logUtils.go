@@ -81,6 +81,14 @@ func StringAsLogLevel(levelStr string) (log.Level, error) {
 	case "error":
 		return log.ErrorLevel, nil
 	default:
-		return log.InfoLevel, log.ErrInvalidLevel
+		return log.InfoLevel, &LogLevelError{Msg: "invalid log level string: " + levelStr}
 	}
+}
+
+type LogLevelError struct {
+	Msg string
+}
+
+func (e *LogLevelError) Error() string {
+	return e.Msg
 }
