@@ -5,14 +5,12 @@ package runner
  */
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/apex/log"
 	"os"
 	"os/exec"
 )
 
-// Global flags
 var (
 	DryRunFlag bool // If true, then don't actually run the commands, just output what would be run
 )
@@ -37,17 +35,12 @@ func RunNPMStart(dirPath, infoMsg string) (bool, error) {
 
 func executeCmd(dirPath string) error {
 	// Run "npm start"
-	var stderrBuffer bytes.Buffer
 	cmd := exec.Command("npm", "start")
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = &stderrBuffer
+	cmd.Stderr = os.Stdout
 	cmd.Dir = dirPath
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error running 'npm start': %v", err)
-	}
-
-	if err := stderrBuffer.String(); err != "" {
 		return fmt.Errorf("error running 'npm start': %v", err)
 	}
 
