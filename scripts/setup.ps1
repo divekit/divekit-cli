@@ -12,6 +12,11 @@ if (-not(get-command -Name "git" -ErrorAction SilentlyContinue)) {
     write-output "Git needs to be installed to run this setup properly."
     exit
 }
+# check if nodejs is installed (includes npm)
+if (-not(get-command -Name "node" -ErrorAction SilentlyContinue)) {
+    write-output "NodeJs needs to be installed to run this setup properly."
+    exit
+}
 # set home and cli root path
 set-location $PSScriptRoot
 $cliRootPath = git rev-parse --show-toplevel

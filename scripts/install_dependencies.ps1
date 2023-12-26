@@ -18,12 +18,8 @@ function install([string]$cmdName, [string]$packageId, [string]$packageManager, 
 }
 
 #  Required to install dependencies
-if (-not(commandExists("winget"))) {
-    write-output "winget needs to be installed to install dependencies"
-    exit
-}
-if (-not(commandExists("choco"))) {
-    write-output "chocolatey needs to be installed to install dependencies"
+if (-not(commandExists("winget")) -or -not(commandExists("choco"))) {
+    write-output "winget and chocolatey needs to be installed to install dependencies"
     exit
 }
 
