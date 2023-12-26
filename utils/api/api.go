@@ -1,13 +1,18 @@
 package api
 
 import (
+	"divekit-cli/utils/fileUtils"
 	"fmt"
 	"github.com/xanzy/go-gitlab"
+	"os"
 )
 
-const (
-	branchName = "main"
-)
+var branchName string
+
+func init() {
+	fileUtils.LoadEnv()
+	branchName = os.Getenv("DIVEKIT_MAINBRANCH_NAME")
+}
 
 func NewGitlabClient(host string, token string) (*gitlab.Client, error) {
 	git, err := gitlab.NewClient(token, gitlab.WithBaseURL(host))
@@ -18,7 +23,15 @@ func NewGitlabClient(host string, token string) (*gitlab.Client, error) {
 	return git, nil
 }
 
-func GetRepositoryByGroupId(client *gitlab.Client, groupId string) ([]*gitlab.Project, error) {
+func GetRepositoryById(client *gitlab.Client, repoId string) (*gitlab.Project, error) {
+	project, _, err := client.Projects.GetProject(repoId, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not get project with repoId: %s: %w", repoId, err)
+	}
+
+	return project, nil
+}
+func GetRepositoriesByGroupId(client *gitlab.Client, groupId string) ([]*gitlab.Project, error) {
 	projects, _, err := client.Groups.ListGroupProjects(groupId, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not get projects with groupId: %s: %w", groupId, err)
@@ -26,6 +39,7 @@ func GetRepositoryByGroupId(client *gitlab.Client, groupId string) ([]*gitlab.Pr
 
 	return projects, nil
 }
+
 func GetFileByRepositoryId(client *gitlab.Client, repoId string, filePath string) (*gitlab.File, error) {
 	option := &gitlab.GetFileOptions{Ref: gitlab.Ptr(branchName)}
 	file, _, err := client.RepositoryFiles.GetFile(repoId, filePath, option)
@@ -56,7 +70,6 @@ func GetCommitsByRepositoryId(client *gitlab.Client, repoId string) ([]*gitlab.C
 
 	return commits, nil
 }
-
 func RevertCommitByRepositoryIdAndCommitId(client *gitlab.Client, repoId string, commitId string) error {
 	option := &gitlab.RevertCommitOptions{
 		Branch: gitlab.Ptr(branchName),

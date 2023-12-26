@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
+	"github.com/joho/godotenv"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -376,6 +378,30 @@ func GetSHA256(filePath string) string {
 	}
 
 	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
+func GetHomePath() string {
+	projectRootDir := GetProjectRootDir()
+	baseDir := GetBaseName(projectRootDir)
+	result := strings.TrimSuffix(projectRootDir, baseDir)
+
+	return result
+}
+
+func GetProjectRootDir() string {
+	bytes, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("Could not get the root dir of this project: %v", err))
+	}
+
+	return strings.TrimSpace(string(bytes))
+}
+func LoadEnv() {
+	projectRootDir := GetProjectRootDir()
+	err := godotenv.Load(projectRootDir + "/.env")
+	if err != nil {
+		log.Fatalf("Error loading .env:", err)
+	}
 }
 
 type InvalidPathError struct {

@@ -10,7 +10,6 @@ import (
 	"divekit-cli/utils/logUtils"
 	"fmt"
 	"github.com/apex/log"
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,13 +21,10 @@ import (
 )
 
 var (
-	client        *gitlab.Client    // Interacts with the GitLab API
-	repositoryIds map[string]string // Access an id by using a repository name as key
-)
-
-const (
-	originRepoName = "divekit-origin-test-repo"
-	homePath       = "C:/Users/Thomas/Documents/Praxisprojekt/Git"
+	client             *gitlab.Client    // Interacts with the GitLab API
+	repositoryIds      map[string]string // Access an id by using a repository name as key
+	homePath           string
+	testOriginRepoName string
 )
 
 func TestPatch(t *testing.T) {
@@ -69,7 +65,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{},
@@ -82,7 +78,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				"invalid_path",
 				"",
 				[]string{"ProjectApplication.java"},
@@ -108,7 +104,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"invalid_level",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{"ProjectApplication.java"},
@@ -121,7 +117,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"invalid_distribution",
 				[]string{"ProjectApplication.java"},
@@ -134,7 +130,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				true,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{"ProjectApplication.java"},
@@ -144,15 +140,18 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -163,7 +162,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				true,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"test",
 				[]string{"$DonationClassName$.json"},
@@ -173,10 +172,12 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -187,7 +188,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				true,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"test",
 				[]string{"$E04M01Name$_E04M01.java", "$E07M03Name$_E07M03.java"},
@@ -197,15 +198,18 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/CanBalance.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -216,7 +220,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				true,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{"$E04M01Name$_E04M01.java", "$E07M03Name$_E07M03.java"},
@@ -226,30 +230,36 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					[]string{},
 					[]string{},
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -260,7 +270,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				true,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"test",
 				[]string{"LDM.uxf"},
@@ -270,20 +280,24 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.jpg",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.jpg",
+					[]string{},
 					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.uxf",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.uxf",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -294,7 +308,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"test",
 				[]string{"$E04M01Name$_E04M01.java"},
@@ -303,6 +317,7 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -313,7 +328,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{"$E06M05Name$_E06M05.java", "$E02M04Name$_E02M04.java"},
@@ -323,15 +338,18 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E02Conditions/GetDayByNumber.java",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -342,7 +360,7 @@ func TestPatch(t *testing.T) {
 			PatchArguments{
 				false,
 				"",
-				originRepoName,
+				testOriginRepoName,
 				homePath,
 				"",
 				[]string{"E2.uxf"},
@@ -352,30 +370,36 @@ func TestPatch(t *testing.T) {
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					[]string{},
 					[]string{},
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
 					[]string{},
+					[]string{},
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					[]string{},
 					[]string{},
 				},
 			},
@@ -405,7 +429,7 @@ func TestPatch(t *testing.T) {
 }
 
 // getLatestCommits searches for the latest commits of each repository.
-// The latest commit of a repository is needed to revert the changes after the test.
+// The latest commit of a repository is needed to revert the changes after a test.
 func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive bool) []Commit {
 	if dryRunActive {
 		t.Log("Dry Run flag set: SKIP SEARCHING for latest commits")
@@ -418,11 +442,13 @@ func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive
 		repositoryId := repositoryIds[generatedFile.RepoName]
 		commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
 		if err != nil {
-			t.Fatalf("could not get the commits: %v", err)
+			t.Fatalf("Could not get the commits from repository `%s` (id: %s): %v",
+				generatedFile.RepoName, repositoryId, err)
 		}
 
+		latestCommit := commits[0]
 		result = append(result, Commit{
-			commits[0].ID,
+			latestCommit.ID,
 			repositoryId,
 		})
 	}
@@ -442,7 +468,8 @@ func deleteFilesFromRepository(t *testing.T, files []GeneratedFile, dryRunActive
 		repositoryId := repositoryIds[file.RepoName]
 		filePath := file.RelFilePath
 		if err := api.DeleteFileByRepositoryId(client, repositoryId, filePath); err != nil {
-			t.Logf("The file %s does not exist in the repository `%s` (id: %s)", filePath, file.RepoName, repositoryId)
+			t.Logf("The file %s does not exist in the repository `%s` (id: %s): %v",
+				filePath, file.RepoName, repositoryId, err)
 		} else {
 			t.Logf("Deleted file %s from repository `%s` (id: %s)", filePath, file.RepoName, repositoryId)
 		}
@@ -494,7 +521,7 @@ func checkFileContent(t *testing.T, files []MatchedFile) {
 	for _, file := range files {
 		bytes, err := os.ReadFile(file.FilePath)
 		if err != nil {
-			t.Fatalf("could not read the file: %s", file.FileName)
+			t.Fatalf("Could not read the file %s: %v", file.FilePath, err)
 		}
 
 		// Generated files should be UTF-8 encoded in order to check their content
@@ -506,16 +533,21 @@ func checkFileContent(t *testing.T, files []MatchedFile) {
 		content := string(bytes)
 
 		// Any file should contain at least one character
-		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.FileName)
+		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.FilePath)
 
 		// Asserts that the content does not contain any delimiters,
 		// because they indicate that wildcards have not been substituted correctly
 		delimiter := "$"
-		assert.NotContainsf(t, content, delimiter, "The file %s contains a %s delimiter", file.FileName, delimiter)
+		assert.NotContainsf(t, content, delimiter, "The file %s contains a %s delimiter", file.FilePath, delimiter)
 
-		// Asserts that the content contains all keywords
-		for _, keyword := range file.Keywords {
-			assert.Containsf(t, content, keyword, "The file %s does not contain the keyword: %s", file.FileName, keyword)
+		// Asserts that the content contains all included keywords
+		for _, keyword := range file.Include {
+			assert.Containsf(t, content, keyword, "The file %s should contain the keyword: %s", file.FilePath, keyword)
+		}
+
+		// Asserts that the content does not contain any excluded keywords
+		for _, keyword := range file.Exclude {
+			assert.NotContainsf(t, content, keyword, "The file %s should not contain the keyword: %s", file.FilePath, keyword)
 		}
 	}
 }
@@ -531,13 +563,13 @@ func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool)
 		currentId := repositoryIds[localFile.RepoName]
 		remoteFile, err := api.GetFileByRepositoryId(client, currentId, localFile.RelFilePath)
 
-		if remoteFileExists := assert.NoErrorf(t, err, "Could not get file %s from repository `%s` (id: %s)",
-			localFile.RelFilePath, localFile.RepoName, currentId); !remoteFileExists {
+		if remoteFileExists := assert.NoErrorf(t, err, "Could not get file %s from repository `%s` (id: %s): %v",
+			localFile.RelFilePath, localFile.RepoName, currentId, err); !remoteFileExists {
 			continue
 		}
 
 		assert.Equalf(t, localFile.SHA256, remoteFile.SHA256,
-			"The hash of the locally generated file does not match with that of the remote file.\n"+
+			"The checksum of the locally generated file does not match with that of the remote file.\n"+
 				"The file may not have been pushed correctly to the repository. `%s` (id: %s)\n"+
 				"Provided file: %s", localFile.RepoName, currentId, localFile.FilePath)
 	}
@@ -553,14 +585,12 @@ func revertCommmits(t *testing.T, initialCommits []Commit, dryRunActive bool) {
 	for _, initialCommit := range initialCommits {
 		revertCommitsUntilInitialId(t, initialCommit.repositoryId, initialCommit.id)
 	}
-
-	t.Log("Reverted commits")
 }
 
 func revertCommitsUntilInitialId(t *testing.T, repositoryId string, initialCommitId string) {
 	commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
 	if err != nil {
-		t.Fatalf("could not get the commits: %v", err)
+		t.Fatalf("Could not get the commits from repository (id: %s): %v", repositoryId, err)
 	}
 
 	for _, commit := range commits {
@@ -569,26 +599,27 @@ func revertCommitsUntilInitialId(t *testing.T, repositoryId string, initialCommi
 		}
 
 		if err := api.RevertCommitByRepositoryIdAndCommitId(client, repositoryId, commit.ID); err != nil {
-			t.Fatalf("could not revert commit %s from repository with the id %s", commit.ID, repositoryId)
+			t.Fatalf("Could not revert the commit '%s' from repository (id: %s): %v", commit.ID, repositoryId, err)
 		}
 	}
+	t.Logf("Reverted commits from repository (id: %s)", repositoryId)
 }
 
 func getGeneratedFilePaths(t *testing.T, distribution string) []string {
 	outputDir := getGeneratedOutputDir(t, distribution)
 	foundPaths, err := fileUtils.FindAnyFilesInDirRecursively(outputDir)
-	require.NoErrorf(t, err, "could not find any files in the directory %s", outputDir)
+	require.NoErrorf(t, err, "Could not find any files in the directory %s: %v", outputDir, err)
 
 	return fileUtils.UnifyPaths(foundPaths)
 }
 func getGeneratedOutputDir(t *testing.T, distribution string) string {
 	if ARSRepo == nil {
-		t.Fatalf("could not find the generated output directory: ARSRepo is nil")
+		t.Fatalf("Could not find the generated output directory: ARSRepo is nil")
 	}
 
 	dir := fileUtils.UnifyPath(ARSRepo.GeneratedLocalOutput.Dir)
 	if dir == "" {
-		t.Fatalf("could not find the generated output directory: the dir is empty")
+		t.Fatalf("Could not find the generated output directory: The directory path is empty")
 	}
 
 	if distribution == "test" {
@@ -661,7 +692,8 @@ func (p PatchArguments) toString() string {
 type GeneratedFile struct {
 	RepoName    string
 	RelFilePath string
-	Keywords    []string
+	Include     []string
+	Exclude     []string
 }
 
 func removeDuplicates(generatedFiles []GeneratedFile) []GeneratedFile {
@@ -684,7 +716,8 @@ type MatchedFile struct {
 	RelFilePath string
 	RepoName    string
 	SHA256      string
-	Keywords    []string
+	Include     []string
+	Exclude     []string
 }
 
 func newMatchedFile(t *testing.T, generatedFile GeneratedFile, filePath string) MatchedFile {
@@ -694,7 +727,8 @@ func newMatchedFile(t *testing.T, generatedFile GeneratedFile, filePath string) 
 		generatedFile.RelFilePath,
 		generatedFile.RepoName,
 		fileUtils.GetSHA256(filePath),
-		generatedFile.Keywords,
+		generatedFile.Include,
+		generatedFile.Exclude,
 	}
 }
 
@@ -705,26 +739,23 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-	loadEnv()
+	fileUtils.LoadEnv()
 	host := os.Getenv("HOST")
 	token := os.Getenv("API_TOKEN")
 	codeGroupId := os.Getenv("CODE_GROUP_ID")
 	testGroupId := os.Getenv("TEST_GROUP_ID")
+	testOriginRepoId := os.Getenv("TEST_ORIGIN_REPO_ID")
 
 	var err error
 	if client, err = api.NewGitlabClient(host, token); err != nil {
 		log.Fatalf("", err)
 	}
-	initRepositoryVariables(codeGroupId, testGroupId)
-}
-func loadEnv() {
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		log.Fatalf("Error loading .env:", err)
-	}
+	initRepositoryIds(codeGroupId, testGroupId)
+	homePath = fileUtils.GetHomePath()
+	testOriginRepoName = getTestOriginRepoName(testOriginRepoId)
 }
 
-func initRepositoryVariables(codeGroupId string, testGroupId string) {
+func initRepositoryIds(codeGroupId string, testGroupId string) {
 	repositoryIds = make(map[string]string)
 
 	codeRepositories := getRepositoriesByGroupId(codeGroupId)
@@ -738,10 +769,23 @@ func initRepositoryVariables(codeGroupId string, testGroupId string) {
 }
 
 func getRepositoriesByGroupId(groupId string) []*gitlab.Project {
-	projects, err := api.GetRepositoryByGroupId(client, groupId)
+	projects, err := api.GetRepositoriesByGroupId(client, groupId)
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("could not get projects with group id %s: %v", groupId, err))
 	}
 
 	return projects
+}
+
+func getTestOriginRepoName(testOriginRepoId string) string {
+	repository, err := api.GetRepositoryById(client, testOriginRepoId)
+	if err != nil {
+		log.Fatalf("", err)
+	}
+
+	return strings.ToLower(repository.Name)
+}
+func TestA(t *testing.T) {
+	a := getTestOriginRepoName("1416")
+	println(a)
 }
