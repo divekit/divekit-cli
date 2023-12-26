@@ -6,7 +6,7 @@ function commandExists([string]$cmdName) {
 
 function install([string]$cmdName, [string]$packageId, [string]$packageManager, [bool]$shouldUpgrade) {
     if (-not($shouldUpgrade) -and (commandExists($cmdName))) {
-        write-output "Upgrade flag is set to false and the package $packageId is already installed. Skipping upgrade."
+        write-output "$packageId is already installed: Skipping upgrade"
         return
     }
 
