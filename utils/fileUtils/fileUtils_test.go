@@ -476,42 +476,6 @@ func teardown() {
 	deleteTestDirs()
 }
 
-// compareDirContent compares relative file paths of two directories and
-// makes sure that the content of these files are identical.
-func compareDirContent(t *testing.T, expectedDir string, actualDir string) {
-	expectedPaths, err := FindAnyFilesInDirRecursively(expectedDir)
-	assert.NoError(t, err, "Failed to find files in the expected directory")
-	actualPaths, err := FindAnyFilesInDirRecursively(actualDir)
-	assert.NoError(t, err, "Failed to find files in the actual directory")
-
-	expectedFiles := ToRelPaths(expectedPaths, expectedDir)
-	actualFiles := ToRelPaths(actualPaths, actualDir)
-
-	ok := assert.ElementsMatch(t, expectedFiles, actualFiles)
-	if ok {
-		// Ensure that the order of files is the same, to compare the content of files with the same name
-		sort.Strings(expectedFiles)
-		sort.Strings(actualFiles)
-
-		for i := range expectedFiles {
-			expectedPath := expectedDir + "/" + expectedFiles[i]
-			actualPath := actualDir + "/" + actualFiles[i]
-			compareFileContent(t, expectedPath, actualPath)
-		}
-	}
-}
-
-func compareFileContent(t *testing.T, expectedFile string, actualFile string) {
-	expectedContent, err := os.ReadFile(expectedFile)
-	assert.NoError(t, err, "Failed to read the expected file '%v'", expectedFile)
-	actualContent, err := os.ReadFile(actualFile)
-	assert.NoError(t, err, "Failed to read the actual file '%v'", actualFile)
-
-	assert.Equal(t, string(expectedContent), string(actualContent),
-		"The content of the expected file '%v' does not match with the content of the actual file '%v'",
-		expectedFile, actualFile)
-}
-
 type TestDirs struct {
 	Simple          string
 	Nested          string
@@ -554,6 +518,7 @@ func createSimpleDir() string {
 
 	return rootDir
 }
+
 func createNestedDir() string {
 	// ./
 	// ├─ a/
@@ -578,7 +543,6 @@ func createNestedDir() string {
 	}
 	return rootDir
 }
-
 func createEqualFileAndDir() string {
 	// ./
 	// └─ a/ <- directory
@@ -605,4 +569,40 @@ func createDirWithOneFile() string {
 	CreateFile(rootDir, "/1.txt", "/1.txt")
 
 	return rootDir
+}
+
+// compareDirContent compares relative file paths of two directories and
+// makes sure that the content of these files are identical.
+func compareDirContent(t *testing.T, expectedDir string, actualDir string) {
+	expectedPaths, err := FindAnyFilesInDirRecursively(expectedDir)
+	assert.NoError(t, err, "Failed to find files in the expected directory")
+	actualPaths, err := FindAnyFilesInDirRecursively(actualDir)
+	assert.NoError(t, err, "Failed to find files in the actual directory")
+
+	expectedFiles := ToRelPaths(expectedPaths, expectedDir)
+	actualFiles := ToRelPaths(actualPaths, actualDir)
+
+	ok := assert.ElementsMatch(t, expectedFiles, actualFiles)
+	if ok {
+		// Ensure that the order of files is the same, to compare the content of files with the same name
+		sort.Strings(expectedFiles)
+		sort.Strings(actualFiles)
+
+		for i := range expectedFiles {
+			expectedPath := expectedDir + "/" + expectedFiles[i]
+			actualPath := actualDir + "/" + actualFiles[i]
+			compareFileContent(t, expectedPath, actualPath)
+		}
+	}
+}
+
+func compareFileContent(t *testing.T, expectedFile string, actualFile string) {
+	expectedContent, err := os.ReadFile(expectedFile)
+	assert.NoError(t, err, "Failed to read the expected file '%v'", expectedFile)
+	actualContent, err := os.ReadFile(actualFile)
+	assert.NoError(t, err, "Failed to read the actual file '%v'", actualFile)
+
+	assert.Equal(t, string(expectedContent), string(actualContent),
+		"The content of the expected file '%v' does not match with the content of the actual file '%v'",
+		expectedFile, actualFile)
 }
