@@ -20,8 +20,6 @@ var (
 func init() {
 	log.Debug("divekit.init()")
 	SetCmdFlags(RootCmd)
-
-	RootCmd.Version = "0.0.1" // todo: get version from git tag
 }
 
 func NewRootCmd() *cobra.Command {
@@ -50,17 +48,17 @@ func SetCmdFlags(cmd *cobra.Command) {
 func persistentPreRun(cmd *cobra.Command, args []string) error {
 	log.Debug("divekit.persistentPreRun()")
 	if err := logUtils.DefineLoggingLevel(LogLevelFlag); err != nil {
-		log.Errorf("Could not define the logging level flag: %v", err)
+		log.Errorf("Could not define the logging level flag:", err)
 		return err
 	}
 
 	if err := divekit.InitDivekitHomeDir(DivekitHomeFlag); err != nil {
-		log.Errorf("Could not initialize the divekit home flag: %v", err)
+		log.Errorf("Could not initialize the divekit home flag:", err)
 		return err
 	}
 
 	if err := origin.InitOriginRepo(OriginRepoNameFlag); err != nil {
-		log.Errorf("Could not initialize the origin repository: %v", err)
+		log.Errorf("Could not initialize the origin repository:", err)
 		return err
 	}
 
