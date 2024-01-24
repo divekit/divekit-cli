@@ -8,8 +8,7 @@ param([string]$destination)
 
 write-output "------------------------- Preparing Setup ----------------------------------"
 
-# CHANGE TO "main" WHEN BRANCH IS MERGED
-$branchName = "test_cli"
+$branchName = "main"
 
 # check if the destination path is passed as an argument
 if ( [string]::IsNullOrEmpty($destination)) {
