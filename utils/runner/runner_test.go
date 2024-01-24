@@ -34,13 +34,15 @@ func TestRunNPMStart(t *testing.T) {
 			true,
 			nil,
 		},
-		{"True dryRunflag with no path should skip execution",
+		{
+			"True dryRunflag with no path should skip execution",
 			"",
 			true,
 			false,
 			nil,
 		},
-		{"False dryRunflag with no path should execute and fail",
+		{
+			"False dryRunflag with no path should execute and fail",
 			"",
 			false,
 			true,
