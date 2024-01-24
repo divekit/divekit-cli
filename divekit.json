@@ -1,0 +1,29 @@
+{
+  "version": "0.0.62",
+  "architecture": {
+    "32bit": {
+      "url": "https://github.com/divekit/divekit-cli/releases/download/0.0.62/divekit-cli_0.0.62_windows_386.zip",
+      "bin": [
+        "divekit.exe"
+      ],
+      "hash": "fd98b6b8e25cbcd90253db66a54ddc88d3b4478fdaf76538ea1950d81f6d7ebd"
+    },
+    "64bit": {
+      "url": "https://github.com/divekit/divekit-cli/releases/download/0.0.62/divekit-cli_0.0.62_windows_amd64.zip",
+      "bin": [
+        "divekit.exe"
+      ],
+      "hash": "427997b4c7998be96468d4abcb67a7307fdebe65413da51c23009ee70f031eb8"
+    }
+  },
+  "homepage": "https://divekit.github.io",
+  "license": "MIT",
+  "depends": [
+    "umlet",
+    "oraclejre8",
+    "nodejs"
+  ],
+  "env_set": {
+    "DIVEKIT_HOME": "$dir"
+  }
+}
