@@ -370,11 +370,21 @@ func GetSHA256(filePath string) string {
 	if err != nil {
 		log.Fatalf(fmt.Sprintf("could not open the file %s: %v", filePath, err))
 	}
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Fatalf(fmt.Sprintf("could not stat the file %s: %v", filePath, err))
+	}
+
+	if fileInfo.IsDir() {
+		log.Fatalf(fmt.Sprintf("could not determine the checksum of the dir: %s", filePath))
+	}
+
 	defer file.Close()
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		log.Fatalf("", err)
+		log.Fatalf("could not read the file:", err)
 	}
 
 	return fmt.Sprintf("%x", hash.Sum(nil))
@@ -388,6 +398,7 @@ func GetHomePath() string {
 	return result
 }
 
+// Only works if the project is a git repo
 func GetProjectRootDir() string {
 	bytes, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
