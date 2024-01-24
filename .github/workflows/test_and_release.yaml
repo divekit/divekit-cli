@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - main
-      - test_cli
 
 permissions:
   contents: write
@@ -99,4 +98,4 @@ jobs:
           git config --global user.name "releaserbot"
           git add "$PWD\divekit.json"
           git commit -m "Updated scoop manifest"
-          git push "https://$( $env:GITHUB_TOKEN )@github.com/divekit/divekit-cli.git" HEAD:test_cli
+          git push "https://$( $env:GITHUB_TOKEN )@github.com/divekit/divekit-cli.git" HEAD:main
