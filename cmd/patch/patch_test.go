@@ -35,7 +35,7 @@ func TestPatch(t *testing.T) {
 		error          error           // expected
 	}{
 		{
-			"[dry run] patch with no args",
+			"[dry run] patch with no args should fail",
 			PatchArguments{
 				false,
 				"",
@@ -48,7 +48,7 @@ func TestPatch(t *testing.T) {
 			&cmd.InvalidArgsError{},
 		},
 		{
-			"[dry run] patch only with a patch file arg",
+			"[dry run] patch only with a patch file arg should fail",
 			PatchArguments{
 				false,
 				"",
@@ -61,7 +61,7 @@ func TestPatch(t *testing.T) {
 			&origin.OriginRepoError{},
 		},
 		{
-			"[dry run] patch with a non existing patch file arg",
+			"[dry run] patch with a non existing patch file arg should fail",
 			PatchArguments{
 				false,
 				"",
@@ -74,7 +74,7 @@ func TestPatch(t *testing.T) {
 			&PatchFileError{},
 		},
 		{
-			"[dry run] patch with an invalid home path",
+			"[dry run] patch with an invalid home path should fail",
 			PatchArguments{
 				false,
 				"",
@@ -87,7 +87,7 @@ func TestPatch(t *testing.T) {
 			&fileUtils.InvalidPathError{},
 		},
 		{
-			"[dry run] patch with an invalid origin repo name",
+			"[dry run] patch with an invalid origin repo name should fail",
 			PatchArguments{
 				false,
 				"",
@@ -100,7 +100,7 @@ func TestPatch(t *testing.T) {
 			&fileUtils.InvalidPathError{},
 		},
 		{
-			"[dry run] patch with an invalid log level",
+			"[dry run] patch with an invalid log level should fail",
 			PatchArguments{
 				false,
 				"invalid_level",
@@ -113,7 +113,7 @@ func TestPatch(t *testing.T) {
 			&logUtils.LogLevelError{},
 		},
 		{
-			"[dry run] patch with an invalid distribution name",
+			"[dry run] patch with an invalid distribution name should fail",
 			PatchArguments{
 				false,
 				"",
@@ -304,6 +304,32 @@ func TestPatch(t *testing.T) {
 			nil,
 		},
 		{
+			"[dry run] patch files with solution deletion",
+			PatchArguments{
+				true,
+				"",
+				testOriginRepoName,
+				homePath,
+				"test",
+				[]string{"Factorial.java", "Main.java"},
+			},
+			[]GeneratedFile{
+				{
+					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
+					"src/main/java/thkoeln/st/basics/exercise/E08Testing/Factorial.java",
+					[]string{"UnsupportedOperationException"},
+					[]string{"SHOULD BE DELETED", "ArithmeticException"},
+				},
+				{
+					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
+					"src/main/java/thkoeln/st/basics/exercise/E08Testing/Factorial.java",
+					[]string{"UnsupportedOperationException"},
+					[]string{"SHOULD BE DELETED", "ArithmeticException"},
+				},
+			},
+			nil,
+		},
+		{
 			"patch a file to one repository",
 			PatchArguments{
 				false,
@@ -414,7 +440,7 @@ func TestPatch(t *testing.T) {
 			distributionFlag := testCase.arguments.distribution
 
 			latestCommits := getLatestCommits(t, generatedFiles, dryRunFlag)
-			deleteFilesFromRepository(t, generatedFiles, dryRunFlag)
+			deleteFilesFromRepositories(t, generatedFiles, dryRunFlag)
 			_, err := executePatch(testCase.arguments)
 
 			checkErrorType(t, testCase.error, err)
@@ -423,13 +449,14 @@ func TestPatch(t *testing.T) {
 				checkFileContent(t, matchedFiles)
 				checkPushedFiles(t, matchedFiles, dryRunFlag)
 			}
-			revertCommmits(t, latestCommits, dryRunFlag)
+			revertCommits(t, latestCommits, dryRunFlag)
 		})
 	}
 }
 
 // getLatestCommits searches for the latest commits of each repository.
-// The latest commit of a repository is needed to revert the changes after a test.
+// The latest commit of a repository is needed to indicate the initial commit after a test
+// in order to revert changes that have been made during a test.
 func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive bool) []Commit {
 	if dryRunActive {
 		t.Log("Dry Run flag set: SKIP SEARCHING for latest commits")
@@ -456,9 +483,10 @@ func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive
 	return result
 }
 
-// deleteFilesFromRepository deletes the generated files from the corresponding repositories.
-// The files should be deleted to test whether they are pushed correctly to the repositories.
-func deleteFilesFromRepository(t *testing.T, files []GeneratedFile, dryRunActive bool) {
+// deleteFilesFromRepositories deletes the specified files from their respective repositories.
+// Prior to testing, it is necessary to delete these files to ensure that they are actually pushed to the
+// repositories, given that they are initially included in the repositories.
+func deleteFilesFromRepositories(t *testing.T, files []GeneratedFile, dryRunActive bool) {
 	if dryRunActive {
 		t.Log("Dry Run flag set: SKIP DELETING remote files")
 		return
@@ -498,7 +526,8 @@ func checkErrorType(t *testing.T, expected error, actual error) {
 }
 
 // matchGeneratedFiles checks if the found file paths match with the expected files and
-// returns a slice of MatchedFiles, which is required for further checks.
+// returns a slice of MatchedFiles. Each MatchedFile contains various information about a file,
+// which is needed to check its correctness.
 func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distribution string) []MatchedFile {
 	var result []MatchedFile
 	var expectedFilePaths []string
@@ -507,7 +536,7 @@ func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distributi
 	for _, expectedFile := range expectedFiles {
 		expectedFilePath := getGeneratedOutputDir(t, distribution) + "/" + expectedFile.RepoName + "/" + expectedFile.RelFilePath
 		expectedFilePaths = append(expectedFilePaths, expectedFilePath)
-		matchedFile := newMatchedFile(t, expectedFile, expectedFilePath)
+		matchedFile := newMatchedFile(expectedFile, expectedFilePath)
 		result = append(result, matchedFile)
 	}
 
@@ -516,21 +545,21 @@ func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distributi
 	return result
 }
 
-// checkFileContent checks if the content of the generated files is correct.
+// checkFileContent checks if the content of the files is correct.
 func checkFileContent(t *testing.T, files []MatchedFile) {
 	for _, file := range files {
-		bytes, err := os.ReadFile(file.FilePath)
+		byteContent, err := os.ReadFile(file.FilePath)
 		if err != nil {
 			t.Fatalf("Could not read the file %s: %v", file.FilePath, err)
 		}
 
 		// Generated files should be UTF-8 encoded in order to check their content
-		if !utf8.Valid(bytes) {
+		if !utf8.Valid(byteContent) {
 			t.Logf("The file %s is not UTF-8 encoded: SKIPPING content check for this file.", file.FileName)
 			continue
 		}
 
-		content := string(bytes)
+		content := string(byteContent)
 
 		// Any file should contain at least one character
 		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.FilePath)
@@ -575,8 +604,8 @@ func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool)
 	}
 }
 
-// revertCommits reverts the commits that have been made during the test.
-func revertCommmits(t *testing.T, initialCommits []Commit, dryRunActive bool) {
+// revertCommits reverts the commits that have been made during a test.
+func revertCommits(t *testing.T, initialCommits []Commit, dryRunActive bool) {
 	if dryRunActive {
 		t.Log("Dry Run flag set: SKIP REVERTING commits")
 		return
@@ -720,7 +749,7 @@ type MatchedFile struct {
 	Exclude     []string
 }
 
-func newMatchedFile(t *testing.T, generatedFile GeneratedFile, filePath string) MatchedFile {
+func newMatchedFile(generatedFile GeneratedFile, filePath string) MatchedFile {
 	return MatchedFile{
 		fileUtils.GetBaseName(generatedFile.RelFilePath),
 		filePath,
@@ -784,8 +813,4 @@ func getTestOriginRepoName(testOriginRepoId string) string {
 	}
 
 	return strings.ToLower(repository.Name)
-}
-func TestA(t *testing.T) {
-	a := getTestOriginRepoName("1416")
-	println(a)
 }
