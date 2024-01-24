@@ -1,0 +1,45 @@
+before:
+  hooks:
+    - powershell "if (test-path "./repositories") { remove-item  -path "./repositories" -recurse -force }"
+    - powershell new-item  -path "./repositories" -type directory
+    - powershell ./scripts/setupRepositories.ps1 -destination $PWD/repositories
+
+release:
+  prerelease: auto
+
+builds:
+  - binary: divekit
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - 386
+
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
+    files:
+      - src: ./repositories/divekit-automated-repo-setup
+        dst: divekit-automated-repo-setup
+      - src: ./repositories/divekit-repo-editor
+        dst: divekit-repo-editor
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+scoops:
+  - name: divekit
+    url_template: "https://github.com/divekit/divekit-cli/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: "https://divekit.github.io"
+    description: ""
+    license: MIT
+    skip_upload: true
+    depends: [ "umlet", "oraclejre8", "nodejs" ]
