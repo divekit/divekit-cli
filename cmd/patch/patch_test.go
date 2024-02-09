@@ -139,20 +139,20 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -171,14 +171,14 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -197,20 +197,20 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/CanBalance.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -229,38 +229,38 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -279,26 +279,26 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.jpg",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.jpg",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.uxf",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.uxf",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -343,8 +343,8 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -363,20 +363,20 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E02Conditions/GetDayByNumber.java",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -395,38 +395,38 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
-					[]string{},
-					[]string{},
+					nil,
+					nil,
 				},
 			},
 			nil,
@@ -439,7 +439,6 @@ func TestPatch(t *testing.T) {
 			dryRunFlag := testCase.arguments.dryRun
 			distributionFlag := testCase.arguments.distribution
 
-			latestCommits := getLatestCommits(t, generatedFiles, dryRunFlag)
 			deleteFilesFromRepositories(t, generatedFiles, dryRunFlag)
 			_, err := executePatch(testCase.arguments)
 
@@ -449,38 +448,8 @@ func TestPatch(t *testing.T) {
 				checkFileContent(t, matchedFiles)
 				checkPushedFiles(t, matchedFiles, dryRunFlag)
 			}
-			revertCommits(t, latestCommits, dryRunFlag)
 		})
 	}
-}
-
-// getLatestCommits searches for the latest commits of each repository.
-// The latest commit of a repository is needed to indicate the initial commit after a test
-// in order to revert changes that have been made during a test.
-func getLatestCommits(t *testing.T, generatedFiles []GeneratedFile, dryRunActive bool) []Commit {
-	if dryRunActive {
-		t.Log("Dry Run flag set: SKIP SEARCHING for latest commits")
-		return nil
-	}
-	var result []Commit
-
-	// Collect the latest commits of each repository
-	for _, generatedFile := range removeDuplicates(generatedFiles) {
-		repositoryId := repositoryIds[generatedFile.RepoName]
-		commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
-		if err != nil {
-			t.Fatalf("Could not get the commits from repository `%s` (id: %s): %v",
-				generatedFile.RepoName, repositoryId, err)
-		}
-
-		latestCommit := commits[0]
-		result = append(result, Commit{
-			latestCommit.ID,
-			repositoryId,
-		})
-	}
-
-	return result
 }
 
 // deleteFilesFromRepositories deletes the specified files from their respective repositories.
@@ -604,36 +573,6 @@ func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool)
 	}
 }
 
-// revertCommits reverts the commits that have been made during a test.
-func revertCommits(t *testing.T, initialCommits []Commit, dryRunActive bool) {
-	if dryRunActive {
-		t.Log("Dry Run flag set: SKIP REVERTING commits")
-		return
-	}
-
-	for _, initialCommit := range initialCommits {
-		revertCommitsUntilInitialId(t, initialCommit.repositoryId, initialCommit.id)
-	}
-}
-
-func revertCommitsUntilInitialId(t *testing.T, repositoryId string, initialCommitId string) {
-	commits, err := api.GetCommitsByRepositoryId(client, repositoryId)
-	if err != nil {
-		t.Fatalf("Could not get the commits from repository (id: %s): %v", repositoryId, err)
-	}
-
-	for _, commit := range commits {
-		if commit.ID == initialCommitId {
-			break // Stop reverting commits if the initial commit has been reached
-		}
-
-		if err := api.RevertCommitByRepositoryIdAndCommitId(client, repositoryId, commit.ID); err != nil {
-			t.Fatalf("Could not revert the commit '%s' from repository (id: %s): %v", commit.ID, repositoryId, err)
-		}
-	}
-	t.Logf("Reverted commits from repository (id: %s)", repositoryId)
-}
-
 func getGeneratedFilePaths(t *testing.T, distribution string) []string {
 	outputDir := getGeneratedOutputDir(t, distribution)
 	foundPaths, err := fileUtils.FindAnyFilesInDirRecursively(outputDir)
@@ -669,11 +608,6 @@ func createCmd() *cobra.Command {
 	return rootCmd
 }
 
-// Commit is used to revert the commits after a test
-type Commit struct {
-	id           string
-	repositoryId string
-}
 type PatchArguments struct {
 	dryRun       bool
 	logLevel     string
@@ -725,20 +659,6 @@ type GeneratedFile struct {
 	Exclude     []string
 }
 
-func removeDuplicates(generatedFiles []GeneratedFile) []GeneratedFile {
-	keys := make(map[string]bool)
-	var result []GeneratedFile
-
-	for _, generatedFile := range generatedFiles {
-		if _, value := keys[generatedFile.RepoName]; !value {
-			keys[generatedFile.RepoName] = true
-			result = append(result, generatedFile)
-		}
-	}
-
-	return result
-}
-
 type MatchedFile struct {
 	FileName    string
 	FilePath    string
@@ -779,31 +699,25 @@ func setup() {
 	if client, err = api.NewGitlabClient(host, token); err != nil {
 		log.Fatalf("", err)
 	}
-	initRepositoryIds(codeGroupId, testGroupId)
+	initRepositoryIds([]string{codeGroupId, testGroupId})
 	homePath = fileUtils.GetHomePath()
 	testOriginRepoName = getTestOriginRepoName(testOriginRepoId)
 }
 
-func initRepositoryIds(codeGroupId string, testGroupId string) {
+func initRepositoryIds(groupIds []string) {
 	repositoryIds = make(map[string]string)
 
-	codeRepositories := getRepositoriesByGroupId(codeGroupId)
-	testRepositories := getRepositoriesByGroupId(testGroupId)
-	repositories := append(codeRepositories, testRepositories...)
+	for _, groupId := range groupIds {
+		repositories, err := api.GetRepositoriesByGroupId(client, groupId)
+		if err != nil {
+			log.Fatalf(fmt.Sprintf("could not get projects with group id %s: %v", groupId, err))
+		}
 
-	for _, repository := range repositories {
-		id := fmt.Sprintf("%d", repository.ID)
-		repositoryIds[repository.Name] = id
+		for _, repository := range repositories {
+			id := fmt.Sprintf("%d", repository.ID)
+			repositoryIds[repository.Name] = id
+		}
 	}
-}
-
-func getRepositoriesByGroupId(groupId string) []*gitlab.Project {
-	projects, err := api.GetRepositoriesByGroupId(client, groupId)
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("could not get projects with group id %s: %v", groupId, err))
-	}
-
-	return projects
 }
 
 func getTestOriginRepoName(testOriginRepoId string) string {
