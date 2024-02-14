@@ -139,18 +139,21 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/st1praktikum/ProjectApplication.java",
+					Code,
 					nil,
 					nil,
 				},
@@ -171,12 +174,14 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/test/resources/milestones/milestone5/objectdescriptions/SponsoringAgreement.json",
+					Test,
 					nil,
 					nil,
 				},
@@ -197,18 +202,21 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/CanBalance.java",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					Test,
 					nil,
 					nil,
 				},
@@ -229,36 +237,42 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E07Lists/IsBalanceable.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/VowelsInString.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					Code,
 					nil,
 					nil,
 				},
@@ -279,24 +293,28 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.jpg",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.jpg",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"LDM.uxf",
+					Test,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"LDM.uxf",
+					Test,
 					nil,
 					nil,
 				},
@@ -317,12 +335,14 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E08Testing/Factorial.java",
+					Test,
 					[]string{"UnsupportedOperationException"},
 					[]string{"SHOULD BE DELETED", "ArithmeticException"},
 				},
 				{
 					"ST1_Test_tests_group_9672285a-67b0-4f2e-830c-72925ba8c76e",
 					"src/main/java/thkoeln/st/basics/exercise/E08Testing/Factorial.java",
+					Test,
 					[]string{"UnsupportedOperationException"},
 					[]string{"SHOULD BE DELETED", "ArithmeticException"},
 				},
@@ -343,6 +363,7 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_tests_group_446e3369-ed35-473e-b825-9cc0aecd6ba3",
 					"src/main/java/thkoeln/st/basics/exercise/E04Methods/NumberOfVowels.java",
+					Test,
 					nil,
 					nil,
 				},
@@ -363,18 +384,21 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/java/thkoeln/st/basics/exercise/E06Arrays/LengthOfUniqueArray.java",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/java/thkoeln/st/basics/exercise/E02Conditions/GetDayByNumber.java",
+					Code,
 					nil,
 					nil,
 				},
@@ -395,36 +419,42 @@ func TestPatch(t *testing.T) {
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.jpg",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8063661e-3603-4b84-b780-aa5ff1c3fe7d",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_86bd537d-9995-4c92-a6f4-bec97eeb7c67",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					Code,
 					nil,
 					nil,
 				},
 				{
 					"ST1_Test_group_8754b8cb-5bc6-4593-9cb8-7c84df266f59",
 					"src/main/resources/milestones/milestone3/exercises/exercise2/E2.uxf",
+					Code,
 					nil,
 					nil,
 				},
@@ -444,9 +474,9 @@ func TestPatch(t *testing.T) {
 
 			checkErrorType(t, testCase.error, err)
 			if err == nil {
-				matchedFiles := matchGeneratedFiles(t, generatedFiles, distributionFlag)
-				checkFileContent(t, matchedFiles)
-				checkPushedFiles(t, matchedFiles, dryRunFlag)
+				matchGeneratedFiles(t, generatedFiles, distributionFlag)
+				checkFileContent(t, generatedFiles)
+				checkPushedFiles(t, generatedFiles, dryRunFlag)
 			}
 		})
 	}
@@ -495,63 +525,57 @@ func checkErrorType(t *testing.T, expected error, actual error) {
 }
 
 // matchGeneratedFiles checks if the found file paths match with the expected files and
-// returns a slice of MatchedFiles. Each MatchedFile contains various information about a file,
-// which is needed to check its correctness.
-func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distribution string) []MatchedFile {
-	var result []MatchedFile
-	var expectedFilePaths []string
+// throws an error when there are any differences.
+func matchGeneratedFiles(t *testing.T, expectedFiles []GeneratedFile, distributionFlag string) {
+	distribution := newDistribution(distributionFlag)
 	actualFilePaths := getGeneratedFilePaths(t, distribution)
 
+	var expectedFilePaths []string
 	for _, expectedFile := range expectedFiles {
-		expectedFilePath := getGeneratedOutputDir(t, distribution) + "/" + expectedFile.RepoName + "/" + expectedFile.RelFilePath
-		expectedFilePaths = append(expectedFilePaths, expectedFilePath)
-		matchedFile := newMatchedFile(expectedFile, expectedFilePath)
-		result = append(result, matchedFile)
+		expectedFilePaths = append(expectedFilePaths, expectedFile.getFilePath())
 	}
 
 	require.ElementsMatchf(t, expectedFilePaths, actualFilePaths, "The expected file paths do not match with the found file paths")
-
-	return result
 }
 
 // checkFileContent checks if the content of the files is correct.
-func checkFileContent(t *testing.T, files []MatchedFile) {
+func checkFileContent(t *testing.T, files []GeneratedFile) {
 	for _, file := range files {
-		byteContent, err := os.ReadFile(file.FilePath)
+		byteContent, err := os.ReadFile(file.getFilePath())
 		if err != nil {
-			t.Fatalf("Could not read the file %s: %v", file.FilePath, err)
+			t.Fatalf("Could not read the file %s: %v", file.getFilePath(), err)
 		}
 
 		// Generated files should be UTF-8 encoded in order to check their content
 		if !utf8.Valid(byteContent) {
-			t.Logf("The file %s is not UTF-8 encoded: SKIPPING content check for this file.", file.FileName)
+			t.Logf("The file %s is not UTF-8 encoded: SKIPPING content check for this file.", file.getFileName())
 			continue
 		}
 
 		content := string(byteContent)
 
 		// Any file should contain at least one character
-		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.FilePath)
+		assert.NotEmptyf(t, content, "The content of the file %s is empty", file.getFilePath())
 
 		// Asserts that the content does not contain any delimiters,
 		// because they indicate that wildcards have not been substituted correctly
 		delimiter := "$"
-		assert.NotContainsf(t, content, delimiter, "The file %s contains a %s delimiter", file.FilePath, delimiter)
+		assert.NotContainsf(t, content, delimiter, "The file %s contains a %s delimiter", file.getFilePath(), delimiter)
 
 		// Asserts that the content contains all included keywords
 		for _, keyword := range file.Include {
-			assert.Containsf(t, content, keyword, "The file %s should contain the keyword: %s", file.FilePath, keyword)
+			assert.Containsf(t, content, keyword, "The file %s should contain the keyword: %s", file.getFilePath(), keyword)
 		}
 
 		// Asserts that the content does not contain any excluded keywords
 		for _, keyword := range file.Exclude {
-			assert.NotContainsf(t, content, keyword, "The file %s should not contain the keyword: %s", file.FilePath, keyword)
+			assert.NotContainsf(t, content, keyword, "The file %s should not contain the keyword: %s", file.getFilePath(), keyword)
 		}
 	}
 }
 
 // checkPushedFiles checks if the generated files have been pushed correctly to the corresponding repositories.
-func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool) {
+func checkPushedFiles(t *testing.T, localFiles []GeneratedFile, dryRunActive bool) {
 	if dryRunActive {
 		t.Log("Dry Run flag set: SKIPPING remote repository check")
 		return
@@ -566,36 +590,13 @@ func checkPushedFiles(t *testing.T, localFiles []MatchedFile, dryRunActive bool)
 			continue
 		}
 
-		assert.Equalf(t, localFile.SHA256, remoteFile.SHA256,
+		assert.Equalf(t, localFile.getSHA256(), remoteFile.SHA256,
 			"The checksum of the locally generated file does not match with that of the remote file.\n"+
 				"The file may not have been pushed correctly to the repository. `%s` (id: %s)\n"+
-				"Provided file: %s", localFile.RepoName, currentId, localFile.FilePath)
+				"Provided file: %s", localFile.RepoName, currentId, localFile.getFilePath())
 	}
 }
 
-func getGeneratedFilePaths(t *testing.T, distribution string) []string {
-	outputDir := getGeneratedOutputDir(t, distribution)
-	foundPaths, err := fileUtils.FindAnyFilesInDirRecursively(outputDir)
-	require.NoErrorf(t, err, "Could not find any files in the directory %s: %v", outputDir, err)
-
-	return fileUtils.UnifyPaths(foundPaths)
-}
-func getGeneratedOutputDir(t *testing.T, distribution string) string {
-	if ARSRepo == nil {
-		t.Fatalf("Could not find the generated output directory: ARSRepo is nil")
-	}
-
-	dir := fileUtils.UnifyPath(ARSRepo.GeneratedLocalOutput.Dir)
-	if dir == "" {
-		t.Fatalf("Could not find the generated output directory: The directory path is empty")
-	}
-
-	if distribution == "test" {
-		return dir + "/test"
-	}
-
-	return dir + "/code"
-}
 func createCmd() *cobra.Command {
 	rootCmd := cmd.NewRootCmd()
 	cmd.SetCmdFlags(rootCmd)
@@ -653,34 +654,65 @@ func (p PatchArguments) toString() string {
 }
 
 type GeneratedFile struct {
-	RepoName    string
-	RelFilePath string
-	Include     []string
-	Exclude     []string
+	RepoName     string
+	RelFilePath  string
+	Distribution Distribution
+	Include      []string
+	Exclude      []string
 }
 
-type MatchedFile struct {
-	FileName    string
-	FilePath    string
-	RelFilePath string
-	RepoName    string
-	SHA256      string
-	Include     []string
-	Exclude     []string
+func (g GeneratedFile) getFilePath() string {
+	return getARSOutputDir() + "/" + string(g.Distribution) + "/" + g.RepoName + "/" + g.RelFilePath
 }
 
-func newMatchedFile(generatedFile GeneratedFile, filePath string) MatchedFile {
-	return MatchedFile{
-		fileUtils.GetBaseName(generatedFile.RelFilePath),
-		filePath,
-		generatedFile.RelFilePath,
-		generatedFile.RepoName,
-		fileUtils.GetSHA256(filePath),
-		generatedFile.Include,
-		generatedFile.Exclude,
+func (g GeneratedFile) getFileName() string {
+	return fileUtils.GetBaseName(g.RelFilePath)
+}
+
+func (g GeneratedFile) getSHA256() string {
+	return fileUtils.GetSHA256(g.getFilePath())
+}
+
+type Distribution string
+
+const (
+	Code Distribution = "code"
+	Test Distribution = "test"
+)
+
+func newDistribution(distributionString string) Distribution {
+	switch distributionString {
+	case "code":
+		return Code
+	case "":
+		return Code
+	case "test":
+		return Test
+	default:
+		log.Fatalf("Could not create a distribution: The distribution string is invalid: %s", distributionString)
+		return ""
 	}
 }
 
+func getGeneratedFilePaths(t *testing.T, distribution Distribution) []string {
+	outputDir := getARSOutputDir() + "/" + string(distribution)
+	foundPaths, err := fileUtils.FindAnyFilesInDirRecursively(outputDir)
+	require.NoErrorf(t, err, "Could not find any files in the directory %s: %v", outputDir, err)
+
+	return fileUtils.UnifyPaths(foundPaths)
+}
+func getARSOutputDir() string {
+	if ARSRepo == nil {
+		log.Fatalf("Could not find the generated output directory: ARSRepo is nil")
+	}
+
+	dir := fileUtils.UnifyPath(ARSRepo.GeneratedLocalOutput.Dir)
+	if dir == "" {
+		log.Fatalf("Could not find the generated output directory: The directory path is empty")
+	}
+
+	return dir
+}
 func TestMain(m *testing.M) {
 	setup()
 	e := m.Run() // run the tests
