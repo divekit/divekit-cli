@@ -1,12 +1,9 @@
 package ars
 
-/**
- * This file an "object-oriented lookalike" implementation for the structure of the ARS repository.
- */
-
 import (
 	"divekit-cli/divekit"
-	"divekit-cli/utils"
+	"divekit-cli/utils/fileUtils"
+	"fmt"
 	"github.com/apex/log"
 	"path/filepath"
 )
@@ -30,21 +27,27 @@ type ARSRepoType struct {
 	}
 }
 
-// This method is similar to a constructor in OOP
-func NewARSRepo() *ARSRepoType {
+func NewARSRepo() (*ARSRepoType, error) {
 	log.Debug("ars.NewARSRepo()")
+	var err error
+
 	arsRepo := &ARSRepoType{}
 	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
 	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources/config")
-	arsRepo.Config.RepositoryConfigFile =
-		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
+	arsRepo.Config.RepositoryConfigFile, err = NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
+	if err != nil {
+		return nil, err
+	}
+
 	arsRepo.IndividualizationConfig.Dir = filepath.Join(arsRepo.RepoDir, "resources/individual_repositories")
 	arsRepo.GeneratedOverviewFiles.Dir = filepath.Join(arsRepo.RepoDir, "resources/overview")
 	arsRepo.GeneratedLocalOutput.Dir = filepath.Join(arsRepo.RepoDir, "resources/test/output")
 
-	utils.OutputAndAbortIfErrors(
-		utils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
-			arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir))
+	if err := fileUtils.ValidateAllDirPaths(arsRepo.RepoDir, arsRepo.Config.Dir, arsRepo.IndividualizationConfig.Dir,
+		arsRepo.GeneratedOverviewFiles.Dir, arsRepo.GeneratedLocalOutput.Dir); err != nil {
+		return nil, fmt.Errorf("the path to the ARS repo is invalid: %w", err)
+	}
+
 	log.WithFields(log.Fields{
 		"RepoDir":                      arsRepo.RepoDir,
 		"ConfigDir":                    arsRepo.Config.Dir,
@@ -52,6 +55,7 @@ func NewARSRepo() *ARSRepoType {
 		"IndividualizationConfigDir":   arsRepo.IndividualizationConfig.Dir,
 		"GeneratedOverviewFilesDir":    arsRepo.GeneratedOverviewFiles.Dir,
 		"GeneratedLocalOutputFilesDir": arsRepo.GeneratedLocalOutput.Dir,
-	}).Info("Setting global variables:")
-	return arsRepo
+	}).Info("Setting global variables")
+
+	return arsRepo, nil
 }

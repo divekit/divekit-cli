@@ -1,12 +1,8 @@
 package ars
 
-/**
- * This file an "object-oriented lookalike" implementation for the repositoryConfig.json file.
- * It is used to read and write the repositoryConfig.json file.
- */
-
 import (
-	"divekit-cli/utils"
+	"divekit-cli/utils/errorHandling"
+	"divekit-cli/utils/fileUtils"
 	"encoding/json"
 	"fmt"
 	"github.com/apex/log"
@@ -55,26 +51,27 @@ type RepositoryConfigFileType struct {
 	}
 }
 
-// This method is similar to a constructor in OOP
-func NewRepositoryConfigFile(path string) *RepositoryConfigFileType {
+func NewRepositoryConfigFile(path string) (*RepositoryConfigFileType, error) {
 	log.Debug("ars.repositoryConfigFile() - path: " + path)
-	utils.OutputAndAbortIfErrors(utils.ValidateAllFilePaths(path))
-	return &RepositoryConfigFileType{
-		FilePath: path,
+	if err := fileUtils.ValidateAllFilePaths(path); err != nil {
+		return nil, err
 	}
+
+	return &RepositoryConfigFileType{FilePath: path}, nil
 }
 
 func (repositoryConfigFile *RepositoryConfigFileType) ReadContent() error {
 	log.Debug("ars.ReadContent() - filePath: " + repositoryConfigFile.FilePath)
 	configFile, err := os.ReadFile(repositoryConfigFile.FilePath)
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %v", err)
+		return fmt.Errorf("failed to read config file: %w", err)
 	}
 	err = json.Unmarshal(configFile, &repositoryConfigFile.Content)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal JSON: %v", err)
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 	repositoryConfigFile.CheckForDeathTraps()
+
 	return nil
 }
 
@@ -82,37 +79,49 @@ func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
 	log.Debug("ars.WriteContent() - filePath: " + repositoryConfigFile.FilePath)
 	updatedConfig, err := json.MarshalIndent(repositoryConfigFile.Content, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %v", err)
+		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
 	err = ioutil.WriteFile(repositoryConfigFile.FilePath, updatedConfig, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write updated config file: %v", err)
+		return fmt.Errorf("failed to write updated config file: %w", err)
 	}
 
 	return nil
 }
 
-func (repositoryConfigFile *RepositoryConfigFileType) CheckForDeathTraps() bool {
+func (repositoryConfigFile *RepositoryConfigFileType) CheckForDeathTraps() {
 	log.Debug("ars.checkForDeathTraps() - filePath: " + repositoryConfigFile.FilePath)
 	if !repositoryConfigFile.Content.General.LocalMode && repositoryConfigFile.Content.Remote.DeleteExistingRepositories {
-		utils.Confirm(
+		if !errorHandling.Confirm(
 			"Your repositoryConfig.json sets local mode to false, and sets \"deleteExistingRepositories\" \n" +
 				"to true. This means that you'll delete all repositories in the target group. \n" +
-				"Are you sure you want to do this?")
+				"Are you sure you want to do this?") {
+			log.Fatalf("Aborting action")
+		}
 	}
-	return true
 }
 
-func (repositoryConfigFile *RepositoryConfigFileType) Clone() *RepositoryConfigFileType {
+func (repositoryConfigFile *RepositoryConfigFileType) Clone() (*RepositoryConfigFileType, error) {
 	log.Debug("ars.Clone() - filePath: " + repositoryConfigFile.FilePath)
 	return repositoryConfigFile.CloneToDifferentLocation(repositoryConfigFile.FilePath)
 }
 
-func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) *RepositoryConfigFileType {
+func (repositoryConfigFile *RepositoryConfigFileType) CloneToDifferentLocation(newFilePath string) (*RepositoryConfigFileType, error) {
 	log.Debug("ars.CloneToDifferentLocation() - newFilePath: " + newFilePath)
-	newFile := NewRepositoryConfigFile(newFilePath)
-	utils.DeepCopy(repositoryConfigFile, newFile)
+	var newFile *RepositoryConfigFileType
+	var err error
+
+	newFile, err = NewRepositoryConfigFile(newFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = fileUtils.DeepCopy(repositoryConfigFile, newFile); err != nil {
+		return nil, err
+	}
+
 	newFile.FilePath = newFilePath
-	return newFile
+
+	return newFile, nil
 }

@@ -1,0 +1,101 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  test_and_release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Cache go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\AppData\Local\go-build
+            ~\go\pkg\mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Cache umlet
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:\ProgramData\chocolatey\lib\umlet
+            C:\ProgramData\chocolatey\bin\Umlet.exe
+          key: ${{ runner.os }}-umlet-
+          restore-keys: |
+            ${{ runner.os }}-umlet-
+
+      - name: Setup project
+        shell: pwsh
+        env:
+          GITLAB_USERNAME: ${{ secrets.GITLAB_USERNAME }}
+          GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+        run: |
+          # Create .env file with credentials
+          (get-content .\.env.example).
+            replace("YOUR_GITLAB_USERNAME", "$env:GITLAB_USERNAME").
+            replace("YOUR_GITLAB_API_TOKEN", "$env:GITLAB_API_TOKEN") |
+            set-content ".\.env"
+          
+          # Setup project
+          .\scripts\setup.ps1
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Determine version
+        id: version
+        uses: paulhatch/semantic-version@v5.3.0
+        with:
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+
+      - name: Create version tag
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag $env:VERSION
+          git push origin $env:VERSION
+
+      - name: Release
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release scoop manifest
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # read the json file and convert it to a powershell object
+          $content = (get-content "$PWD/dist/scoop/divekit.json") | convertFrom-json
+
+          # add a new property to the object
+          $content | add-member -Name "env_set" -value (convertFrom-json '{ "DIVEKIT_HOME": "$dir" }') -memberType noteProperty
+          
+          # convert the object back to json and create a manifest with its content in the root of the repository
+          $content | convertTo-json -depth 10 | set-content "$PWD/divekit.json"
+          
+          # push the manifest
+          git config --global user.email "bot@releaser.com"
+          git config --global user.name "releaserbot"
+          git add "$PWD\divekit.json"
+          git commit -m "Updated scoop manifest"
+          git push "https://$( $env:GITHUB_TOKEN )@github.com/divekit/divekit-cli.git" HEAD:main
