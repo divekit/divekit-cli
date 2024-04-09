@@ -25,7 +25,8 @@ var setupCmd = &cobra.Command{
 For example:
 
 divekit setup --naming=praktikum-S{{now "2006"}}-{{.group}}-{{uuid}}-{{autoincrement}} --dry-run --details`,
-	Run: setupRun,
+	Run:    setupRun,
+	PreRun: setupPreRun,
 }
 
 func init() {
@@ -39,24 +40,30 @@ func init() {
 	rootCmd.AddCommand(setupCmd)
 }
 
+// Checks preconditions before running the command
+func setupPreRun(cmd *cobra.Command, args []string) {
+	ars.Repo = ars.NewARSRepo() // TODO: this looks for /../divekit-automated-repo-setup/resources/config/repositoryConfig.json and can't find it. (look for local .divekit_norepo/distributions/[milestone|test]/repositoryConfig.json first?)
+}
+
 func setupRun(cmd *cobra.Command, args []string) {
 	log.Debug("setup.run()")
+
+	// get the naming pattern
+	fmt.Println("--- ars.config ---")
+	if ars.Repo == nil || ars.Repo.Config.RepositoryConfigFile == nil {
+		log.Fatal("ARSRepo or its Config is not properly initialized")
+	}
+	members := ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryMembers
+
+	//print the members
+	fmt.Println("Members:")
+	for _, member := range members {
+		fmt.Println("\t", member)
+	}
 
 	naming, err := cmd.Flags().GetString("naming")
 	if err != nil {
 		log.Errorf("Failed to get 'naming' flag: %v", err)
-		return
-	}
-
-	groupBy, err := cmd.Flags().GetString("group-by")
-	if err != nil {
-		log.Errorf("Failed to get 'group-by' flag: %v", err)
-		return
-	}
-
-	table, err := cmd.Flags().GetString("table")
-	if err != nil {
-		log.Errorf("Failed to get 'table' flag: %v", err)
 		return
 	}
 
@@ -69,12 +76,10 @@ func setupRun(cmd *cobra.Command, args []string) {
 		fmt.Println("Simulated repository names:")
 
 		groupDataMap, err := ars.GroupAndNameRepositories(
-			ars.WithTablePath(table),
 			ars.WithNamingPattern(naming),
-			ars.WithGroupBy(groupBy),
 		)
 		if err != nil {
-			fmt.Println("Error grouping and naming repositories:", err)
+			fmt.Println("Error naming repositories:", err)
 			return
 		}
 

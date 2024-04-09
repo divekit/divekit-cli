@@ -8,8 +8,9 @@ import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/ars"
 	"divekit-cli/utils"
-	"github.com/apex/log"
 	"path/filepath"
+
+	"github.com/apex/log"
 )
 
 // global variable for the origin repository
@@ -76,9 +77,9 @@ func (originRepo *OriginRepoType) initDistributions() {
 
 func (originRepo *OriginRepoType) initIndividualRepositoriesFile(distributionName string, distributionFolder string) {
 	log.Debug("origin.initIndividualRepositoriesFile()")
-	individualRepositoriesFilePath, err :=
+	individualRepositoriesFilePath, _ :=
 		utils.FindUniqueFileWithPrefix(distributionFolder, "individual_repositories")
-	utils.OutputAndAbortIfError(err)
+	//utils.OutputAndAbortIfError(err) // TODO: aborts on commands that don't need this file (e.g. setup) - should only happen on commands that need it (validation?)
 	distribution, ok := originRepo.DistributionMap[distributionName]
 	if !ok {
 		// Create a new Distribution if it doesn't exist
