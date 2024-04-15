@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -42,29 +43,18 @@ func init() {
 
 // Checks preconditions before running the command
 func setupPreRun(cmd *cobra.Command, args []string) {
-	ars.Repo = ars.NewARSRepo() // TODO: this looks for /../divekit-automated-repo-setup/resources/config/repositoryConfig.json and can't find it. (look for local .divekit_norepo/distributions/[milestone|test]/repositoryConfig.json first?)
+	ars.Repo = ars.NewARSRepo()
+	if ars.Repo == nil || ars.Repo.Config.RepositoryConfigFile == nil || ars.Repo.Config.RepositoryConfigFile.ReadContent() != nil {
+		log.Fatal("ARSRepo or its Config is not properly initialized or failed to load")
+	}
 }
 
 func setupRun(cmd *cobra.Command, args []string) {
 	log.Debug("setup.run()")
 
 	// get the naming pattern
-	fmt.Println("--- ars.config ---")
 	if ars.Repo == nil || ars.Repo.Config.RepositoryConfigFile == nil {
 		log.Fatal("ARSRepo or its Config is not properly initialized")
-	}
-	members := ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryMembers
-
-	//print the members
-	fmt.Println("Members:")
-	for _, member := range members {
-		fmt.Println("\t", member)
-	}
-
-	naming, err := cmd.Flags().GetString("naming")
-	if err != nil {
-		log.Errorf("Failed to get 'naming' flag: %v", err)
-		return
 	}
 
 	if utils.DryRunFlag {
@@ -75,11 +65,14 @@ func setupRun(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		fmt.Println("Simulated repository names:")
 
-		groupDataMap, err := ars.GroupAndNameRepositories(
-			ars.WithNamingPattern(naming),
+		groupDataMap, err := ars.NameGroupedRepositories(
+			ars.WithGroups(ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryMembers),
+			ars.WithNamingPattern(ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryName),
 		)
 		if err != nil {
-			fmt.Println("Error naming repositories:", err)
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Error("Error naming repositories")
 			return
 		}
 
@@ -109,7 +102,9 @@ func setupRun(cmd *cobra.Command, args []string) {
 			}
 		}
 		fmt.Println()
+		os.Exit(0)
 	} else {
 		log.Error("Error: 'setup' command is not yet implemented")
+		os.Exit(1)
 	}
 }

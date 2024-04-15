@@ -12,35 +12,94 @@ import (
 	"github.com/spf13/viper"
 )
 
+// GroupData contains the records and the name of a group
 type GroupData struct {
 	Records []map[string]string
 	Name    string
 }
 
+// GroupOption is a function that modifies the GroupOptions
 type GroupOption func(*GroupOptions)
 
+// GroupOptions contains options for grouping and naming repositories
 type GroupOptions struct {
 	TablePath     string
 	NamingPattern string
 	GroupBy       string
+	Groups        [][]string
 }
 
+// WithTablePath allows to provide a path to a table file
 func WithTablePath(path string) GroupOption {
 	return func(opts *GroupOptions) {
 		opts.TablePath = path
 	}
 }
 
+// WithNamingPattern allows to provide a naming pattern for the repositories
 func WithNamingPattern(pattern string) GroupOption {
 	return func(opts *GroupOptions) {
 		opts.NamingPattern = pattern
 	}
 }
 
+// WithGroupBy allows to provide a column name to group by
 func WithGroupBy(groupBy string) GroupOption {
 	return func(opts *GroupOptions) {
 		opts.GroupBy = groupBy
 	}
+}
+
+// WithGroups allows to provide grouped student ids directly
+func WithGroups(groups [][]string) GroupOption {
+	return func(opts *GroupOptions) {
+		opts.Groups = groups
+	}
+}
+
+// NameGroupedRepositories takes grouped student ids and applies a naming pattern
+func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, error) {
+
+	// Default options
+	opts := &GroupOptions{
+		NamingPattern: viper.GetString("namingpattern"),
+	}
+
+	// Override options
+	for _, option := range options {
+		option(opts)
+	}
+
+	groupDataMap := make(map[string]*GroupData)
+	for _, group := range opts.Groups {
+
+		naming, err := applyDynamicTemplate(opts.NamingPattern, mapFromGroup(group))
+		if err != nil {
+			fmt.Println("Error applying naming pattern:", err)
+			return nil, err
+		}
+
+		var records []map[string]string
+		for _, user := range group {
+			records = append(records, map[string]string{"username": user})
+		}
+
+		groupDataMap[naming] = &GroupData{
+			Records: records,
+			Name:    cleanGitLabProjectName(naming),
+		}
+	}
+
+	return groupDataMap, nil
+}
+
+// mapFromGroup converts a group of student ids to a map with keys "username[0]", "username[1]", ...
+func mapFromGroup(group []string) map[string]string {
+	data := make(map[string]string)
+	for i, value := range group {
+		data[fmt.Sprintf("username[%d]", i)] = value
+	}
+	return data
 }
 
 // GroupAndNameRepositories groups students data and applies a naming pattern
@@ -48,9 +107,9 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 
 	// Default-Optionen
 	opts := &GroupOptions{
-		TablePath:     viper.GetString("distribution.table"),
-		NamingPattern: viper.GetString("distribution.namingpattern"),
-		GroupBy:       viper.GetString("distribution.groupBy"),
+		TablePath:     viper.GetString("table"),
+		NamingPattern: viper.GetString("namingpattern"),
+		GroupBy:       viper.GetString("groupBy"),
 	}
 
 	// Optionen überschreiben
@@ -105,6 +164,9 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 }
 
 func applyDynamicTemplate(namingPattern string, data map[string]string) (string, error) {
+	if data == nil {
+		data = make(map[string]string)
+	}
 
 	tmpl, err := template.New("naming").Funcs(template.FuncMap{
 		"now":           Now,

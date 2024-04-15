@@ -7,8 +7,9 @@ package ars
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/utils"
-	"github.com/apex/log"
 	"path/filepath"
+
+	"github.com/apex/log"
 )
 
 // all the paths used in the ARS repository (all as full paths)
@@ -34,7 +35,7 @@ type ARSRepoType struct {
 func NewARSRepo() *ARSRepoType {
 	log.Debug("ars.NewARSRepo()")
 	arsRepo := &ARSRepoType{}
-	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
+	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup") // TODO: this should probably look in the origin repo first
 	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources/config")
 	arsRepo.Config.RepositoryConfigFile =
 		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
