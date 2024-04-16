@@ -122,9 +122,26 @@ As test data, I have used the following origin repo:
   - There are two test files, one open and one hidden (test repo only). I have added a useless (but not
     confusing) individualized comment on top of the first test in each test file.
   
-### Development of the "setup" subcommand - how to test
+### Development of the "setup" subcommand
 
-(this is just temporary during development, will be removed later)
+#### current state 
+
+The setup command is not yet fully implemented. 
+
+The current setup command can only put out names for the new repos based on the given `repositoryConfig.json` in the origin repo under `.divekit_norepo/distributions/*`.
+
+This command puts out the names of the new repos based on the given `repositoryConfig.json` in the origin repo under `.divekit_norepo/distributions/test`.
+
+```
+go run main.go setup -m "C:\...\staff\divekit-modules" -o "\..\origins\test-origin-1" --details --dry-run --distribution "test"
+```
+
+#### Problems
+- Reading the Config from the "milestone" distribution isn't working (idk why)
+
+#### DEPRECATED
+
+##### using data from a csv file for the setup command - can maybe used for a wizard-like command?
 
 For now, I only implemented what I already had. The code will be adapted to the given conditions in the next few days.
 
@@ -150,3 +167,4 @@ or in the compiled version:
 ```batch
 ./divekit setup --naming 'praktikum-S{{now "2006"}}-{{.group}}-{{uuid}}-{{autoincrement}}' --dry-run --details --table "path/to/students.csv" --group-by "group"
 ```
+

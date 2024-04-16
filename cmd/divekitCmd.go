@@ -4,6 +4,7 @@ import (
 	"divekit-cli/divekit"
 	"divekit-cli/divekit/origin"
 	"divekit-cli/utils"
+
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,8 @@ func init() {
 		"name of the origin repo to work with")
 	rootCmd.PersistentFlags().StringVarP(&DivekitHomeFlag, "home", "m", "",
 		"home directory of all the Divekit repos")
+	rootCmd.PersistentFlags().StringVarP(&DistributionNameFlag, "distribution", "d", "test",
+		"name of the repo-distribution to work with")
 }
 
 func persistentPreRun(cmd *cobra.Command, args []string) {

@@ -10,12 +10,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"divekit-cli/divekit/ars"
+	"divekit-cli/divekit/origin"
 	"divekit-cli/utils"
 	"divekit-cli/utils/dye"
 )
 
 var (
-	ShowDetails bool
+	ShowDetails     bool
+	originRepo      *origin.OriginRepoType
+	distributionKey string
 )
 
 // setupCmd represents the setup command
@@ -35,7 +38,7 @@ func init() {
 	// setupCmd.Flags().StringP("naming", "n", "", "name template for the repositories to be created")
 	// setupCmd.Flags().StringP("group-by", "g", "", "group by column name")
 	// setupCmd.Flags().StringP("table", "t", "", "path to the table file")
-	setupCmd.Flags().BoolVarP(&ShowDetails, "details", "d", false, "Show detailed output for each group")
+	setupCmd.Flags().BoolVarP(&ShowDetails, "details", "", false, "Show detailed output for each group")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(setupCmd)
@@ -47,6 +50,41 @@ func setupPreRun(cmd *cobra.Command, args []string) {
 	if ars.Repo == nil || ars.Repo.Config.RepositoryConfigFile == nil || ars.Repo.Config.RepositoryConfigFile.ReadContent() != nil {
 		log.Fatal("ARSRepo or its Config is not properly initialized or failed to load")
 	}
+
+	originRepoName, err := rootCmd.PersistentFlags().GetString("originrepo")
+	if err != nil {
+		log.Fatal("Failed to get originrepo flag")
+	}
+
+	distributionKey, err = rootCmd.PersistentFlags().GetString("distribution")
+	if err != nil {
+		log.Fatal("Failed to get distribution flag")
+	}
+
+	originRepo = origin.NewOriginRepo(originRepoName)
+	if err := checkRepoConfig(originRepo, distributionKey); err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
+func checkRepoConfig(repo *origin.OriginRepoType, distributionKey string) error {
+	if repo == nil {
+		return fmt.Errorf("OriginRepo is nil")
+	}
+	if repo.DistributionMap == nil {
+		return fmt.Errorf("DistributionMap is nil")
+	}
+	distribution, ok := repo.DistributionMap[distributionKey]
+	if !ok {
+		return fmt.Errorf("distribution %s not found in Distribution Folder", distributionKey)
+	}
+	if distribution.RepositoryConfigFile == nil {
+		return fmt.Errorf("no RepositoryConfigFile found for %s", distributionKey)
+	}
+	if distribution.RepositoryConfigFile.ReadContent() != nil {
+		return fmt.Errorf("failed to read content from RepositoryConfigFile for %s", distributionKey)
+	}
+	return nil
 }
 
 func setupRun(cmd *cobra.Command, args []string) {
@@ -57,7 +95,7 @@ func setupRun(cmd *cobra.Command, args []string) {
 		log.Fatal("ARSRepo or its Config is not properly initialized")
 	}
 
-	var configContent ars.RepositoryConfigContentType = ars.Repo.Config.RepositoryConfigFile.Content
+	var configContent ars.RepositoryConfigContentType = originRepo.DistributionMap["test"].RepositoryConfigFile.Content
 
 	groupDataMap, err := ars.NameGroupedRepositories(
 		ars.WithGroups(configContent.Repository.RepositoryMembers),
@@ -71,19 +109,18 @@ func setupRun(cmd *cobra.Command, args []string) {
 	}
 
 	if utils.DryRunFlag {
+		fmt.Println(dye.Very.Red("Dry run mode enabled. No changes will be made."))
+
 		printExample(groupDataMap, configContent)
 		os.Exit(0)
-	} else {
-		log.Error("Error: 'setup' command is not yet implemented")
-		os.Exit(1)
 	}
+
+	log.Error("Error: 'setup' command is not yet implemented")
+	os.Exit(1)
 }
 
 func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
 	fmt.Println()
-
-	fmt.Println("Dry run mode enabled. No changes will be made.")
-
 	fmt.Println("Target IDs:")
 	fmt.Println("\t", dye.Grey("LIVE:"), dye.Yellow(configContent.Remote.CodeRepositoryTargetGroupId))
 	fmt.Println("\t", dye.Grey("TEST:"), dye.Yellow(configContent.Remote.TestRepositoryTargetGroupId))
@@ -114,4 +151,6 @@ func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.Repo
 			fmt.Printf(" %s\n", dye.Grey(fmt.Sprintf("(%d rows)", len(groupData.Records))))
 		}
 	}
+
+	fmt.Println()
 }
