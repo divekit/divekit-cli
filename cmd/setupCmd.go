@@ -57,14 +57,11 @@ func setupRun(cmd *cobra.Command, args []string) {
 		log.Fatal("ARSRepo or its Config is not properly initialized")
 	}
 
-	targetIDs := map[string]int{
-		"live": ars.Repo.Config.RepositoryConfigFile.Content.Remote.CodeRepositoryTargetGroupId,
-		"test": ars.Repo.Config.RepositoryConfigFile.Content.Remote.TestRepositoryTargetGroupId,
-	}
+	var configContent ars.RepositoryConfigContentType = ars.Repo.Config.RepositoryConfigFile.Content
 
 	groupDataMap, err := ars.NameGroupedRepositories(
-		ars.WithGroups(ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryMembers),
-		ars.WithNamingPattern(ars.Repo.Config.RepositoryConfigFile.Content.Repository.RepositoryName),
+		ars.WithGroups(configContent.Repository.RepositoryMembers),
+		ars.WithNamingPattern(configContent.Repository.RepositoryName),
 	)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -74,9 +71,7 @@ func setupRun(cmd *cobra.Command, args []string) {
 	}
 
 	if utils.DryRunFlag {
-
-		printExample(groupDataMap, targetIDs)
-		fmt.Println()
+		printExample(groupDataMap, configContent)
 		os.Exit(0)
 	} else {
 		log.Error("Error: 'setup' command is not yet implemented")
@@ -84,14 +79,14 @@ func setupRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func printExample(groupDataMap map[string]*ars.GroupData, targetIDs map[string]int) {
+func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
 	fmt.Println()
 
 	fmt.Println("Dry run mode enabled. No changes will be made.")
 
 	fmt.Println("Target IDs:")
-	fmt.Println("\t", dye.Grey("LIVE:"), dye.Yellow(targetIDs["live"])) // "code" target
-	fmt.Println("\t", dye.Grey("TEST:"), dye.Yellow(targetIDs["test"]))
+	fmt.Println("\t", dye.Grey("LIVE:"), dye.Yellow(configContent.Remote.CodeRepositoryTargetGroupId))
+	fmt.Println("\t", dye.Grey("TEST:"), dye.Yellow(configContent.Remote.TestRepositoryTargetGroupId))
 
 	fmt.Println("Repository names:")
 
