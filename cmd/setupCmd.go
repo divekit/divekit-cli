@@ -75,17 +75,7 @@ func setupRun(cmd *cobra.Command, args []string) {
 
 	if utils.DryRunFlag {
 
-		fmt.Println()
-
-		fmt.Println("Dry run mode enabled. No changes will be made.")
-
-		fmt.Println("Target IDs:")
-		fmt.Println("\t", dye.Grey("LIVE:"), dye.Yellow(targetIDs["live"])) // "code" target
-		fmt.Println("\t", dye.Grey("TEST:"), dye.Yellow(targetIDs["test"]))
-
-		fmt.Println("Repository names:")
-
-		printExample(groupDataMap)
+		printExample(groupDataMap, targetIDs)
 		fmt.Println()
 		os.Exit(0)
 	} else {
@@ -94,7 +84,17 @@ func setupRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func printExample(groupDataMap map[string]*ars.GroupData) {
+func printExample(groupDataMap map[string]*ars.GroupData, targetIDs map[string]int) {
+	fmt.Println()
+
+	fmt.Println("Dry run mode enabled. No changes will be made.")
+
+	fmt.Println("Target IDs:")
+	fmt.Println("\t", dye.Grey("LIVE:"), dye.Yellow(targetIDs["live"])) // "code" target
+	fmt.Println("\t", dye.Grey("TEST:"), dye.Yellow(targetIDs["test"]))
+
+	fmt.Println("Repository names:")
+
 	for _, groupData := range groupDataMap {
 
 		fmt.Printf("\t%s", dye.Yellow(groupData.Name))
