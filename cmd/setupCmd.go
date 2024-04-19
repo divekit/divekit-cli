@@ -8,12 +8,12 @@ import (
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
-	"github.com/xanzy/go-gitlab"
 
 	"divekit-cli/divekit/ars"
 	"divekit-cli/divekit/origin"
 	"divekit-cli/utils"
 	"divekit-cli/utils/dye"
+	"divekit-cli/utils/gitlabapi"
 )
 
 var (
@@ -38,9 +38,6 @@ divekit setup --naming=praktikum-S{{now "2006"}}-{{.group}}-{{uuid}}-{{autoincre
 
 func init() {
 	log.Debug("setup.init()")
-	// setupCmd.Flags().StringP("naming", "n", "", "name template for the repositories to be created")
-	// setupCmd.Flags().StringP("group-by", "g", "", "group by column name")
-	// setupCmd.Flags().StringP("table", "t", "", "path to the table file")
 	setupCmd.Flags().BoolVarP(&ShowDetails, "details", "", false, "Show detailed output for each group")
 	setupCmd.Flags().StringVarP(&token, "token", "t", "", "GitLab token")
 	setupCmd.Flags().StringVarP(&remote, "remote", "r", "", "Remote repository URL (GitLab Instance)")
@@ -72,26 +69,6 @@ func setupPreRun(cmd *cobra.Command, args []string) {
 	}
 }
 
-func checkRepoConfig(repo *origin.OriginRepoType, distributionKey string) error {
-	if repo == nil {
-		return fmt.Errorf("OriginRepo is nil")
-	}
-	if repo.DistributionMap == nil {
-		return fmt.Errorf("DistributionMap is nil")
-	}
-	distribution, ok := repo.DistributionMap[distributionKey]
-	if !ok {
-		return fmt.Errorf("distribution %s not found in Distribution Folder", distributionKey)
-	}
-	if distribution.RepositoryConfigFile == nil {
-		return fmt.Errorf("no RepositoryConfigFile found for %s", distributionKey)
-	}
-	if distribution.RepositoryConfigFile.ReadContent() != nil {
-		return fmt.Errorf("failed to read content from RepositoryConfigFile for %s", distributionKey)
-	}
-	return nil
-}
-
 func setupRun(cmd *cobra.Command, args []string) {
 	log.Debug("setup.run()")
 
@@ -120,83 +97,10 @@ func setupRun(cmd *cobra.Command, args []string) {
 		os.Exit(0)
 	}
 
-	createOnlineRepositories(groupDataMap, configContent)
+	gitLabClient := gitlabapi.NewGitLabClient(token, remote)
+	gitLabClient.CreateOnlineRepositories(groupDataMap, configContent)
 
-	log.Error("Error: 'setup' command is not yet implemented")
 	os.Exit(1)
-}
-
-func userExists(git *gitlab.Client, username string) (*gitlab.User, bool) {
-	users, _, err := git.Users.ListUsers(&gitlab.ListUsersOptions{Username: &username})
-	if err != nil || len(users) == 0 {
-		return nil, false
-	}
-	return users[0], true
-}
-
-func getNamespaceID(git *gitlab.Client, namespaceName string) (int, error) {
-	groups, _, err := git.Groups.ListGroups(&gitlab.ListGroupsOptions{Search: &namespaceName})
-	if err != nil {
-		return 0, err
-	}
-	for _, group := range groups {
-		if group.Name == namespaceName {
-			return group.ID, nil
-		}
-	}
-	return 0, fmt.Errorf("namespace not found")
-}
-
-func createOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
-	fmt.Println()
-	fmt.Println("Creating repositories online...")
-
-	git, err := gitlab.NewClient(token, gitlab.WithBaseURL(remote))
-	if err != nil {
-		log.Fatalf("Error creating GitLab client: %v", err)
-	}
-
-	testRepositoryTargetGroupID := configContent.Remote.TestRepositoryTargetGroupId
-
-	for _, groupData := range groupDataMap {
-		var validUsers []*gitlab.User
-		for _, record := range groupData.Records {
-			if username, ok := record["username"]; ok {
-				if user, exists := userExists(git, username); exists {
-					validUsers = append(validUsers, user)
-				}
-			}
-		}
-
-		if len(validUsers) > 0 {
-			repoName := groupData.Name
-			project, _, err := git.Projects.CreateProject(&gitlab.CreateProjectOptions{
-				Name:        &repoName,
-				NamespaceID: &testRepositoryTargetGroupID,
-			})
-			if err != nil {
-				log.Fatalf("Error creating repository for %s: %v", repoName, err)
-			}
-
-			for _, user := range validUsers {
-				accessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
-				_, _, err := git.ProjectMembers.AddProjectMember(project.ID, &gitlab.AddProjectMemberOptions{
-					UserID:      &user.ID,
-					AccessLevel: &accessLevel,
-				})
-				if err != nil {
-					fmt.Printf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
-				}
-			}
-
-			fmt.Printf("Repository %s created successfully\n", repoName)
-		} else {
-			fmt.Printf("No valid users found for %s; skipping repository creation.\n", groupData.Name)
-		}
-	}
-
-	fmt.Println("Repositories created successfully")
-	fmt.Println()
 }
 
 func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
@@ -233,4 +137,24 @@ func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.Repo
 	}
 
 	fmt.Println()
+}
+
+func checkRepoConfig(repo *origin.OriginRepoType, distributionKey string) error {
+	if repo == nil {
+		return fmt.Errorf("OriginRepo is nil")
+	}
+	if repo.DistributionMap == nil {
+		return fmt.Errorf("DistributionMap is nil")
+	}
+	distribution, ok := repo.DistributionMap[distributionKey]
+	if !ok {
+		return fmt.Errorf("distribution %s not found in Distribution Folder", distributionKey)
+	}
+	if distribution.RepositoryConfigFile == nil {
+		return fmt.Errorf("no RepositoryConfigFile found for %s", distributionKey)
+	}
+	if distribution.RepositoryConfigFile.ReadContent() != nil {
+		return fmt.Errorf("failed to read content from RepositoryConfigFile for %s", distributionKey)
+	}
+	return nil
 }
