@@ -36,7 +36,8 @@ func (g *gitLabType) UserExists(username string) (*gitlab.User, bool, error) {
 	return users[0], true, nil
 }
 
-func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) error {
+func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) []error {
+	errors := make([]error, 0)
 	for _, groupData := range groupDataMap {
 		var validUsers []*gitlab.User
 		for _, record := range groupData.Records {
@@ -46,7 +47,8 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 			}
 			user, exists, err := g.UserExists(username)
 			if err != nil {
-				return err
+				errors = append(errors, err)
+				continue
 			}
 			if exists {
 				validUsers = append(validUsers, user)
@@ -54,7 +56,7 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 		}
 
 		if len(validUsers) == 0 {
-			log.Infof("No valid users found for %s; skipping repository creation.\n", groupData.Name)
+			log.Infof("No valid users found for %s; skipping repository creation.", groupData.Name)
 			continue
 		}
 
@@ -64,7 +66,9 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 			NamespaceID: &configContent.Remote.TestRepositoryTargetGroupId,
 		})
 		if err != nil {
-			return fmt.Errorf("error creating repository for %s: %w", repoName, err)
+			message := fmt.Sprintf("error creating repository for %s: %v", repoName, err)
+			errors = append(errors, fmt.Errorf(message))
+			log.Errorf("error creating repository for %s: %w", repoName, err)
 		}
 
 		for _, user := range validUsers {
@@ -74,11 +78,12 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 				AccessLevel: &accessLevel,
 			})
 			if err != nil {
-				log.Errorf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
+				log.Errorf("Failed to add user %s to project %s:\n\t%v", user.Username, repoName, err)
 			}
 		}
 
-		log.Infof("Repository %s created successfully\n", repoName)
+		log.Infof("Repository %s created successfully", repoName)
 	}
-	return nil
+
+	return errors
 }

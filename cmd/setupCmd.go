@@ -104,7 +104,6 @@ func setupRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to create online repositories: %v", err)
 	}
-	fmt.Println("Repositories created successfully")
 
 	os.Exit(1)
 }
