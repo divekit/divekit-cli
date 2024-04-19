@@ -21,7 +21,7 @@ var (
 	originRepo      *origin.OriginRepoType
 	distributionKey string
 	token           string
-	remote          string // e.g. https://git.archi-lab.io/
+	baseURL         string // e.g. https://git.archi-lab.io/
 )
 
 // setupCmd represents the setup command
@@ -40,7 +40,7 @@ func init() {
 	log.Debug("setup.init()")
 	setupCmd.Flags().BoolVarP(&ShowDetails, "details", "", false, "Show detailed output for each group")
 	setupCmd.Flags().StringVarP(&token, "token", "t", "", "GitLab token")
-	setupCmd.Flags().StringVarP(&remote, "remote", "r", "", "Remote repository URL (GitLab Instance)")
+	setupCmd.Flags().StringVarP(&baseURL, "remote", "r", "", "Remote repository URL (GitLab Instance)")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(setupCmd)
@@ -96,9 +96,15 @@ func setupRun(cmd *cobra.Command, args []string) {
 		printExample(groupDataMap, configContent)
 		os.Exit(0)
 	}
-
-	gitLabClient := gitlabapi.NewGitLabClient(token, remote)
-	gitLabClient.CreateOnlineRepositories(groupDataMap, configContent)
+	gitLabClient, err := gitlabapi.NewGitLabClient(token, baseURL)
+	if err != nil {
+		log.Fatalf("Failed to create GitLab client: %v", err)
+	}
+	err = gitLabClient.CreateOnlineRepositories(groupDataMap, configContent)
+	if err != nil {
+		log.Fatalf("Failed to create online repositories: %v", err)
+	}
+	fmt.Println("Repositories created successfully")
 
 	os.Exit(1)
 }

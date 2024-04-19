@@ -8,68 +8,77 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type GitLab struct {
-	Client *gitlab.Client
+type GitLabClient interface {
+	UserExists(username string) (*gitlab.User, bool, error)
+	CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) error
 }
 
-func NewGitLabClient(token, remote string) *GitLab {
-	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(remote))
+type gitLabType struct {
+	client *gitlab.Client
+}
+
+func NewGitLabClient(token, baseURL string) (GitLabClient, error) {
+	client, err := gitlab.NewClient(token, gitlab.WithBaseURL(baseURL))
 	if err != nil {
-		log.Fatalf("Error creating GitLab client: %v", err)
+		return nil, fmt.Errorf("error creating GitLab client: %w", err)
 	}
-	return &GitLab{Client: client}
+	return &gitLabType{client: client}, nil
 }
 
-func (g *GitLab) UserExists(username string) (*gitlab.User, bool) {
-	users, _, err := g.Client.Users.ListUsers(&gitlab.ListUsersOptions{Username: &username})
-	if err != nil || len(users) == 0 {
-		return nil, false
+func (g *gitLabType) UserExists(username string) (*gitlab.User, bool, error) {
+	users, _, err := g.client.Users.ListUsers(&gitlab.ListUsersOptions{Username: &username})
+	if err != nil {
+		return nil, false, fmt.Errorf("error listing users: %w", err)
 	}
-	return users[0], true
+	if len(users) == 0 {
+		return nil, false, nil
+	}
+	return users[0], true, nil
 }
 
-func (g *GitLab) CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
-	fmt.Println()
-	fmt.Println("Creating repositories online...")
-	testRepositoryTargetGroupID := configContent.Remote.TestRepositoryTargetGroupId
-
+func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) error {
 	for _, groupData := range groupDataMap {
 		var validUsers []*gitlab.User
 		for _, record := range groupData.Records {
-			if username, ok := record["username"]; ok {
-				if user, exists := g.UserExists(username); exists {
-					validUsers = append(validUsers, user)
-				}
+			username, ok := record["username"]
+			if !ok {
+				continue
+			}
+			user, exists, err := g.UserExists(username)
+			if err != nil {
+				return err
+			}
+			if exists {
+				validUsers = append(validUsers, user)
 			}
 		}
 
-		if len(validUsers) > 0 {
-			repoName := groupData.Name
-			project, _, err := g.Client.Projects.CreateProject(&gitlab.CreateProjectOptions{
-				Name:        &repoName,
-				NamespaceID: &testRepositoryTargetGroupID,
+		if len(validUsers) == 0 {
+			log.Printf("No valid users found for %s; skipping repository creation.\n", groupData.Name)
+			continue
+		}
+
+		repoName := groupData.Name
+		project, _, err := g.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
+			Name:        &repoName,
+			NamespaceID: &configContent.Remote.TestRepositoryTargetGroupId,
+		})
+		if err != nil {
+			return fmt.Errorf("error creating repository for %s: %w", repoName, err)
+		}
+
+		for _, user := range validUsers {
+			accessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
+			_, _, err := g.client.ProjectMembers.AddProjectMember(project.ID, &gitlab.AddProjectMemberOptions{
+				UserID:      &user.ID,
+				AccessLevel: &accessLevel,
 			})
 			if err != nil {
-				log.Fatalf("Error creating repository for %s: %v", repoName, err)
+				log.Printf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
 			}
-
-			for _, user := range validUsers {
-				accessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
-				_, _, err := g.Client.ProjectMembers.AddProjectMember(project.ID, &gitlab.AddProjectMemberOptions{
-					UserID:      &user.ID,
-					AccessLevel: &accessLevel,
-				})
-				if err != nil {
-					fmt.Printf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
-				}
-			}
-
-			fmt.Printf("Repository %s created successfully\n", repoName)
-		} else {
-			fmt.Printf("No valid users found for %s; skipping repository creation.\n", groupData.Name)
 		}
-	}
 
-	fmt.Println("Repositories created successfully")
-	fmt.Println()
+		log.Printf("Repository %s created successfully\n", repoName)
+	}
+	return nil
 }
