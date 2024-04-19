@@ -3,8 +3,8 @@ package gitlabapi
 import (
 	"divekit-cli/divekit/ars"
 	"fmt"
-	"log"
 
+	"github.com/apex/log"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -54,7 +54,7 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 		}
 
 		if len(validUsers) == 0 {
-			log.Printf("No valid users found for %s; skipping repository creation.\n", groupData.Name)
+			log.Infof("No valid users found for %s; skipping repository creation.\n", groupData.Name)
 			continue
 		}
 
@@ -74,11 +74,11 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 				AccessLevel: &accessLevel,
 			})
 			if err != nil {
-				log.Printf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
+				log.Errorf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
 			}
 		}
 
-		log.Printf("Repository %s created successfully\n", repoName)
+		log.Infof("Repository %s created successfully\n", repoName)
 	}
 	return nil
 }
