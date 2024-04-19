@@ -132,8 +132,13 @@ The current setup command can only put out names for the new repos based on the 
 
 This command puts out the names of the new repos based on the given `repositoryConfig.json` in the origin repo under `.divekit_norepo/distributions/test`.
 
-```
+```golang
 go run main.go setup -m "C:\...\staff\divekit-modules" -o "\..\origins\test-origin-1" --details --dry-run --distribution "test"
+```
+
+For real creation of the new repos, the command should look like this:
+```golang
+go run main.go setup -m "C:\...\staff\divekit-modules" -o "\..\origins\test-origin-1" --details --distribution "test" -t "glpat-{rest_of_token}" -remote "https://git.archi-lab.io/"
 ```
 
 #### Problems

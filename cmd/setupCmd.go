@@ -8,6 +8,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
+	"github.com/xanzy/go-gitlab"
 
 	"divekit-cli/divekit/ars"
 	"divekit-cli/divekit/origin"
@@ -19,6 +20,8 @@ var (
 	ShowDetails     bool
 	originRepo      *origin.OriginRepoType
 	distributionKey string
+	token           string
+	remote          string // e.g. https://git.archi-lab.io/
 )
 
 // setupCmd represents the setup command
@@ -39,6 +42,8 @@ func init() {
 	// setupCmd.Flags().StringP("group-by", "g", "", "group by column name")
 	// setupCmd.Flags().StringP("table", "t", "", "path to the table file")
 	setupCmd.Flags().BoolVarP(&ShowDetails, "details", "", false, "Show detailed output for each group")
+	setupCmd.Flags().StringVarP(&token, "token", "t", "", "GitLab token")
+	setupCmd.Flags().StringVarP(&remote, "remote", "r", "", "Remote repository URL (GitLab Instance)")
 
 	patchCmd.MarkPersistentFlagRequired("originrepo")
 	rootCmd.AddCommand(setupCmd)
@@ -115,8 +120,83 @@ func setupRun(cmd *cobra.Command, args []string) {
 		os.Exit(0)
 	}
 
+	createOnlineRepositories(groupDataMap, configContent)
+
 	log.Error("Error: 'setup' command is not yet implemented")
 	os.Exit(1)
+}
+
+func userExists(git *gitlab.Client, username string) (*gitlab.User, bool) {
+	users, _, err := git.Users.ListUsers(&gitlab.ListUsersOptions{Username: &username})
+	if err != nil || len(users) == 0 {
+		return nil, false
+	}
+	return users[0], true
+}
+
+func getNamespaceID(git *gitlab.Client, namespaceName string) (int, error) {
+	groups, _, err := git.Groups.ListGroups(&gitlab.ListGroupsOptions{Search: &namespaceName})
+	if err != nil {
+		return 0, err
+	}
+	for _, group := range groups {
+		if group.Name == namespaceName {
+			return group.ID, nil
+		}
+	}
+	return 0, fmt.Errorf("namespace not found")
+}
+
+func createOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
+	fmt.Println()
+	fmt.Println("Creating repositories online...")
+
+	git, err := gitlab.NewClient(token, gitlab.WithBaseURL(remote))
+	if err != nil {
+		log.Fatalf("Error creating GitLab client: %v", err)
+	}
+
+	testRepositoryTargetGroupID := configContent.Remote.TestRepositoryTargetGroupId
+
+	for _, groupData := range groupDataMap {
+		var validUsers []*gitlab.User
+		for _, record := range groupData.Records {
+			if username, ok := record["username"]; ok {
+				if user, exists := userExists(git, username); exists {
+					validUsers = append(validUsers, user)
+				}
+			}
+		}
+
+		if len(validUsers) > 0 {
+			repoName := groupData.Name
+			project, _, err := git.Projects.CreateProject(&gitlab.CreateProjectOptions{
+				Name:        &repoName,
+				NamespaceID: &testRepositoryTargetGroupID,
+			})
+			if err != nil {
+				log.Fatalf("Error creating repository for %s: %v", repoName, err)
+			}
+
+			for _, user := range validUsers {
+				accessLevel := gitlab.AccessLevelValue(gitlab.DeveloperPermissions)
+				_, _, err := git.ProjectMembers.AddProjectMember(project.ID, &gitlab.AddProjectMemberOptions{
+					UserID:      &user.ID,
+					AccessLevel: &accessLevel,
+				})
+				if err != nil {
+					fmt.Printf("Failed to add user %s to project %s:\n\t%v\n", user.Username, repoName, err)
+				}
+			}
+
+			fmt.Printf("Repository %s created successfully\n", repoName)
+		} else {
+			fmt.Printf("No valid users found for %s; skipping repository creation.\n", groupData.Name)
+		}
+	}
+
+	fmt.Println("Repositories created successfully")
+	fmt.Println()
 }
 
 func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) {
