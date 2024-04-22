@@ -100,9 +100,14 @@ func setupRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to create GitLab client: %v", err)
 	}
-	err = gitLabClient.CreateOnlineRepositories(groupDataMap, configContent)
-	if err != nil {
-		log.Fatalf("Failed to create online repositories: %v", err)
+	errors := gitLabClient.CreateOnlineRepositories(groupDataMap, configContent)
+	if len(errors) > 0 {
+		for _, err := range errors {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Error("Failed to create one or more online repositories")
+		}
+		os.Exit(1)
 	}
 
 	os.Exit(1)

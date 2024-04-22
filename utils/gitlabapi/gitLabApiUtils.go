@@ -10,7 +10,7 @@ import (
 
 type GitLabClient interface {
 	UserExists(username string) (*gitlab.User, bool, error)
-	CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) error
+	CreateOnlineRepositories(groupDataMap map[string]*ars.GroupData, configContent ars.RepositoryConfigContentType) []error
 }
 
 type gitLabType struct {
