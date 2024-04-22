@@ -77,7 +77,7 @@ func setupRun(cmd *cobra.Command, args []string) {
 		log.Fatal("ARSRepo or its Config is not properly initialized")
 	}
 
-	var configContent ars.RepositoryConfigContentType = originRepo.DistributionMap["test"].RepositoryConfigFile.Content
+	var configContent ars.RepositoryConfigContentType = originRepo.DistributionMap[distributionKey].RepositoryConfigFile.Content
 
 	groupDataMap, err := ars.NameGroupedRepositories(
 		ars.WithGroups(configContent.Repository.RepositoryMembers),
