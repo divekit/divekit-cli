@@ -56,11 +56,11 @@ func (g *gitLabType) CreateOnlineRepositories(groupDataMap map[string]*ars.Group
 		}
 
 		if len(validUsers) == 0 {
-			log.Infof("No valid users found for %s; skipping repository creation.", groupData.Name)
+			log.Infof("No valid users found for %s; skipping repository creation.", groupData.RepositoryName)
 			continue
 		}
 
-		repoName := groupData.Name
+		repoName := groupData.RepositoryName
 		project, _, err := g.client.Projects.CreateProject(&gitlab.CreateProjectOptions{
 			Name:        &repoName,
 			NamespaceID: &configContent.Remote.TestRepositoryTargetGroupId,

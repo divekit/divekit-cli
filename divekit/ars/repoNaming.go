@@ -14,8 +14,8 @@ import (
 
 // GroupData contains the records and the name of a group
 type GroupData struct {
-	Records []map[string]string
-	Name    string
+	Records        []map[string]string
+	RepositoryName string
 }
 
 // GroupOption is a function that modifies the GroupOptions
@@ -27,6 +27,11 @@ type GroupOptions struct {
 	NamingPattern string
 	GroupBy       string
 	Groups        [][]string
+}
+
+type TemplateData struct {
+	Usernames []string
+	Group     string
 }
 
 // WithTablePath allows to provide a path to a table file
@@ -59,60 +64,43 @@ func WithGroups(groups [][]string) GroupOption {
 
 // NameGroupedRepositories takes grouped student ids and applies a naming pattern
 func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, error) {
-
-	// Default options
 	opts := &GroupOptions{
 		NamingPattern: viper.GetString("namingpattern"),
 	}
 
-	// Override options
 	for _, option := range options {
 		option(opts)
 	}
 
-	groupDataMap := make(map[string]*GroupData)
+	groups := make(map[string][]map[string]string)
 	for _, group := range opts.Groups {
-
-		naming, err := applyDynamicTemplate(opts.NamingPattern, mapFromGroup(group))
-		if err != nil {
-			fmt.Println("Error applying naming pattern:", err)
-			return nil, err
-		}
-
 		var records []map[string]string
 		for _, user := range group {
 			records = append(records, map[string]string{"username": user})
 		}
-
-		groupDataMap[naming] = &GroupData{
-			Records: records,
-			Name:    cleanGitLabProjectName(naming),
-		}
+		groups[userGroupIdentifier(group)] = records
 	}
 
-	return groupDataMap, nil
+	return applyGroupingAndNaming(opts, groups)
 }
 
 // mapFromGroup converts a group of student ids to a map with keys "username[0]", "username[1]", ...
-func mapFromGroup(group []string) map[string]string {
-	data := make(map[string]string)
-	for i, value := range group {
-		data[fmt.Sprintf("username[%d]", i)] = value
+func mapFromRecords(records []map[string]string, group string) TemplateData {
+	usernames := make([]string, len(records))
+	for i, record := range records {
+		usernames[i] = record["username"]
 	}
-	return data
+	return TemplateData{Usernames: usernames, Group: group}
 }
 
 // GroupAndNameRepositories groups students data and applies a naming pattern
 func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, error) {
-
-	// Default-Optionen
 	opts := &GroupOptions{
 		TablePath:     viper.GetString("table"),
 		NamingPattern: viper.GetString("namingpattern"),
 		GroupBy:       viper.GetString("groupBy"),
 	}
 
-	// Optionen überschreiben
 	for _, option := range options {
 		option(opts)
 	}
@@ -129,7 +117,7 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 		return nil, fmt.Errorf("error reading header from table file: %v", err)
 	}
 
-	groupDataMap := make(map[string]*GroupData)
+	groups := make(map[string][]map[string]string)
 	for {
 		record, err := csvReader.Read()
 		if err == io.EOF {
@@ -145,28 +133,36 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 		}
 
 		groupName := data[opts.GroupBy]
-		if group, exists := groupDataMap[groupName]; exists {
-			group.Records = append(group.Records, data)
-		} else {
-			naming, err := applyDynamicTemplate(opts.NamingPattern, data)
-			if err != nil {
-				fmt.Println("Error applying naming pattern:", err)
-				return nil, err
-			}
-			groupDataMap[groupName] = &GroupData{
-				Records: []map[string]string{data},
-				Name:    cleanGitLabProjectName(naming),
-			}
+		groups[groupName] = append(groups[groupName], data)
+	}
+
+	return applyGroupingAndNaming(opts, groups)
+}
+
+func userGroupIdentifier(group []string) string {
+	return strings.Join(group, "-")
+}
+
+func applyGroupingAndNaming(opts *GroupOptions, groups map[string][]map[string]string) (map[string]*GroupData, error) {
+	groupDataMap := make(map[string]*GroupData)
+
+	for groupName, records := range groups {
+		data := mapFromRecords(records, groupName)
+		naming, err := applyDynamicTemplate(opts.NamingPattern, data)
+		if err != nil {
+			return nil, err
+		}
+
+		groupDataMap[naming] = &GroupData{
+			Records:        records,
+			RepositoryName: cleanGitLabProjectName(naming),
 		}
 	}
 
 	return groupDataMap, nil
 }
 
-func applyDynamicTemplate(namingPattern string, data map[string]string) (string, error) {
-	if data == nil {
-		data = make(map[string]string)
-	}
+func applyDynamicTemplate(namingPattern string, data TemplateData) (string, error) {
 
 	tmpl, err := template.New("naming").Funcs(template.FuncMap{
 		"now":           Now,
@@ -176,42 +172,56 @@ func applyDynamicTemplate(namingPattern string, data map[string]string) (string,
 		"autoincrement": Autoincrement,
 	}).Parse(namingPattern)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("template parsing failed: %w", err)
 	}
 
 	var result strings.Builder
 	err = tmpl.Execute(&result, data)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("template execution failed: %w, data was: %+v", err, data)
 	}
 
 	return result.String(), nil
 }
 
+// cleanGitLabProjectName cleans up a project name for GitLab
 func cleanGitLabProjectName(name string) string {
-	// Konvertiere den String zuerst in Kleinbuchstaben
-	name = strings.ToLower(name)
+	name = replaceUmlauts(name)
+	name = cleanUpIllegalCharacters(name)
+	name = cleanUpHyphens(name)
 
-	// Ersetze deutsche Umlaute und ß durch ihre Äquivalente
+	return name
+}
+
+// cleanUpHyphens removes multi hyphens and leading/trailing hyphens
+func cleanUpHyphens(cleaned string) string {
+	cleaned = regexp.MustCompile(`\-+`).ReplaceAllString(cleaned, "-")
+
+	cleaned = strings.Trim(cleaned, "-")
+	return cleaned
+}
+
+// cleanUpIllegalCharacters removes all characters that are not A-Z, a-z, 0-9 or a hyphen
+func cleanUpIllegalCharacters(name string) string {
+	reg := regexp.MustCompile(`[^a-zA-Z0-9\-]+`)
+	cleaned := reg.ReplaceAllString(name, "-")
+	return cleaned
+}
+
+// replaceUmlauts replaces umlauts with their equivalent ascii representation
+func replaceUmlauts(name string) string {
 	replacements := map[string]string{
 		"ä": "ae",
 		"ö": "oe",
 		"ü": "ue",
 		"ß": "ss",
+		"Ä": "ae",
+		"Ö": "Oe",
+		"Ü": "Ue",
+		"ẞ": "Ss",
 	}
 	for old, new := range replacements {
 		name = strings.ReplaceAll(name, old, new)
 	}
-
-	// Ersetze alle unerwünschten Zeichen durch Bindestriche
-	reg := regexp.MustCompile(`[^a-z0-9\-]+`)
-	cleaned := reg.ReplaceAllString(name, "-")
-
-	// Entferne mehrfache Bindestriche, die durch die Ersetzung entstanden sein könnten
-	cleaned = regexp.MustCompile(`\-+`).ReplaceAllString(cleaned, "-")
-
-	// Entferne Bindestriche am Anfang und Ende
-	cleaned = strings.Trim(cleaned, "-")
-
-	return cleaned
+	return name
 }

@@ -123,7 +123,7 @@ func printExample(groupDataMap map[string]*ars.GroupData, configContent ars.Repo
 
 	for _, groupData := range groupDataMap {
 
-		fmt.Printf("\t%s", dye.Yellow(groupData.Name))
+		fmt.Printf("\t%s", dye.Yellow(groupData.RepositoryName))
 		if ShowDetails {
 			fmt.Println()
 			for _, record := range groupData.Records {
