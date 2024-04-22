@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/spf13/viper"
 )
@@ -86,9 +87,13 @@ func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, err
 
 // mapFromGroup converts a group of student ids to a map with keys "username[0]", "username[1]", ...
 func mapFromRecords(records []map[string]string, group string) TemplateData {
+	if group == "" {
+		group = "username"
+	}
+
 	usernames := make([]string, len(records))
 	for i, record := range records {
-		usernames[i] = record["username"]
+		usernames[i] = record[group]
 	}
 	return TemplateData{Usernames: usernames, Group: group}
 }
@@ -209,19 +214,33 @@ func cleanUpIllegalCharacters(name string) string {
 }
 
 // replaceUmlauts replaces umlauts with their equivalent ascii representation
-func replaceUmlauts(name string) string {
-	replacements := map[string]string{
-		"ä": "ae",
-		"ö": "oe",
-		"ü": "ue",
-		"ß": "ss",
-		"Ä": "ae",
-		"Ö": "Oe",
-		"Ü": "Ue",
-		"ẞ": "Ss",
+func replaceUmlauts(input string) string {
+	replacements := map[rune]string{
+		'ä': "ae", 'ö': "oe", 'ü': "ue", 'ß': "ss",
+		'Ä': "Ae", 'Ö': "Oe", 'Ü': "Ue", 'ẞ': "Ss",
 	}
-	for old, new := range replacements {
-		name = strings.ReplaceAll(name, old, new)
+	result := []rune{}
+	inputRunes := []rune(input)
+
+	for i, r := range inputRunes {
+		if repl, ok := replacements[r]; ok {
+			var shouldCapitalize bool
+			if i > 0 && unicode.IsLetter(inputRunes[i-1]) && unicode.IsUpper(inputRunes[i-1]) {
+				shouldCapitalize = true
+			}
+			if i < len(inputRunes)-1 && unicode.IsLetter(inputRunes[i+1]) && unicode.IsUpper(inputRunes[i+1]) {
+				shouldCapitalize = true
+			}
+
+			if unicode.IsUpper(r) && shouldCapitalize {
+				repl = strings.ToUpper(repl)
+			}
+
+			result = append(result, []rune(repl)...)
+		} else {
+			result = append(result, r)
+		}
 	}
-	return name
+
+	return string(result)
 }
