@@ -131,6 +131,30 @@ func TestNameGroupedRepositories(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			name: "multiple groups",
+			options: []GroupOption{
+				WithNamingPattern("group-{{index .Usernames 0}}-{{index .Usernames 1}}"),
+				WithGroups([][]string{{"alice", "bob"}, {"charlie", "dave"}}),
+			},
+			expected: map[string]*GroupData{
+				"group-alice-bob": &GroupData{
+					Records: []map[string]string{
+						{"username": "alice"},
+						{"username": "bob"},
+					},
+					RepositoryName: "group-alice-bob",
+				},
+				"group-charlie-dave": &GroupData{
+					Records: []map[string]string{
+						{"username": "charlie"},
+						{"username": "dave"},
+					},
+					RepositoryName: "group-charlie-dave",
+				},
+			},
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {

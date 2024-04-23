@@ -76,11 +76,11 @@ func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, err
 	groups := make(map[string][]map[string]string)
 	for _, group := range opts.Groups {
 		var records []map[string]string
+		groupId := userGroupIdentifier(group)
 		for _, user := range group {
-			records = append(records, map[string]string{"username": user})
+			records = append(records, map[string]string{"username": user, "group": groupId})
 		}
-		id := userGroupIdentifier(group)
-		groups[id] = records
+		groups[groupId] = records
 	}
 
 	return applyGroupingAndNaming(opts, groups)
@@ -138,10 +138,15 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 
 func applyGroupingAndNaming(opts *GroupOptions, groups map[string][]map[string]string) (map[string]*GroupData, error) {
 	groupDataMap := make(map[string]*GroupData)
+	uniquePatternRegex := regexp.MustCompile(`\{\{.*\}\}`) // was `\b(uuid|autoincrement|hash)\b`, but is too weak
 
 	for groupName, records := range groups {
-		fmt.Fprintf(os.Stderr, "Group %s has %d records\n", groupName, len(records))
-		data := mapFromRecords(records, "")
+		data := mapFromRecords(records, groupName)
+
+		if !uniquePatternRegex.MatchString(opts.NamingPattern) {
+			opts.NamingPattern = opts.NamingPattern + "-{{uuid}}"
+		}
+
 		naming, err := applyDynamicTemplate(opts.NamingPattern, data)
 		if err != nil {
 			return nil, err
