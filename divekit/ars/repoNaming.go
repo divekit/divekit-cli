@@ -79,23 +79,15 @@ func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, err
 		for _, user := range group {
 			records = append(records, map[string]string{"username": user})
 		}
-		groups[userGroupIdentifier(group)] = records
+		id := userGroupIdentifier(group)
+		groups[id] = records
 	}
 
 	return applyGroupingAndNaming(opts, groups)
 }
 
-// mapFromGroup converts a group of student ids to a map with keys "username[0]", "username[1]", ...
-func mapFromRecords(records []map[string]string, group string) TemplateData {
-	if group == "" {
-		group = "username"
-	}
-
-	usernames := make([]string, len(records))
-	for i, record := range records {
-		usernames[i] = record[group]
-	}
-	return TemplateData{Usernames: usernames, Group: group}
+func userGroupIdentifier(group []string) string {
+	return strings.Join(group, "-")
 }
 
 // GroupAndNameRepositories groups students data and applies a naming pattern
@@ -144,15 +136,12 @@ func GroupAndNameRepositories(options ...GroupOption) (map[string]*GroupData, er
 	return applyGroupingAndNaming(opts, groups)
 }
 
-func userGroupIdentifier(group []string) string {
-	return strings.Join(group, "-")
-}
-
 func applyGroupingAndNaming(opts *GroupOptions, groups map[string][]map[string]string) (map[string]*GroupData, error) {
 	groupDataMap := make(map[string]*GroupData)
 
 	for groupName, records := range groups {
-		data := mapFromRecords(records, groupName)
+		fmt.Fprintf(os.Stderr, "Group %s has %d records\n", groupName, len(records))
+		data := mapFromRecords(records, "")
 		naming, err := applyDynamicTemplate(opts.NamingPattern, data)
 		if err != nil {
 			return nil, err
@@ -165,6 +154,19 @@ func applyGroupingAndNaming(opts *GroupOptions, groups map[string][]map[string]s
 	}
 
 	return groupDataMap, nil
+}
+
+// mapFromGroup converts a group of student ids to a map with keys "username[0]", "username[1]", ...
+func mapFromRecords(records []map[string]string, group string) TemplateData {
+	if group == "" {
+		group = "username"
+	}
+
+	usernames := make([]string, len(records))
+	for i, record := range records {
+		usernames[i] = record[group]
+	}
+	return TemplateData{Usernames: usernames, Group: group}
 }
 
 func applyDynamicTemplate(namingPattern string, data TemplateData) (string, error) {

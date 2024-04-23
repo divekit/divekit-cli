@@ -98,27 +98,51 @@ func TestCleanGitLabProjectName(t *testing.T) {
 	}
 }
 
-func TestNameGroupedRepositories(t *testing.T) {
-	options := []GroupOption{
-		WithNamingPattern("group-{{index .Usernames 0}}-{{index .Usernames 1}}"),
-		WithGroups([][]string{{"alice", "bob"}}),
+func TestUserGroupIdentifier(t *testing.T) {
+	group := []string{"alice", "bob"}
+	expected := "alice-bob"
+	result := userGroupIdentifier(group)
+	if result != expected {
+		t.Errorf("Expected %s, got %s", expected, result)
 	}
-	expected := map[string]*GroupData{
-		"group-alice-bob": &GroupData{
-			Records: []map[string]string{
-				{"username": "alice"},
-				{"username": "bob"},
+}
+
+func TestNameGroupedRepositories(t *testing.T) {
+	tests := []struct {
+		name        string
+		options     []GroupOption
+		expected    map[string]*GroupData
+		expectError bool
+	}{
+		{
+			name: "single group",
+			options: []GroupOption{
+				WithNamingPattern("group-{{index .Usernames 0}}-{{index .Usernames 1}}"),
+				WithGroups([][]string{{"alice", "bob"}}),
 			},
-			RepositoryName: "group-alice-bob",
+			expected: map[string]*GroupData{
+				"group-alice-bob": &GroupData{
+					Records: []map[string]string{
+						{"username": "alice"},
+						{"username": "bob"},
+					},
+					RepositoryName: "group-alice-bob",
+				},
+			},
+			expectError: false,
 		},
 	}
 
-	result, err := NameGroupedRepositories(options...)
-	if err != nil {
-		t.Fatalf("Error should not have occurred: %v", err)
-	}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := NameGroupedRepositories(tt.options...)
+			if (err != nil) != tt.expectError {
+				t.Fatalf("NameGroupedRepositories() error = %v, expectError %v", err, tt.expectError)
+			}
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
 	}
 }
 
