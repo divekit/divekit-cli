@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"unicode"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -17,6 +18,7 @@ import (
 type GroupData struct {
 	Records        []map[string]string
 	RepositoryName string
+	Uuid           string
 }
 
 // GroupOption is a function that modifies the GroupOptions
@@ -33,6 +35,7 @@ type GroupOptions struct {
 type TemplateData struct {
 	Usernames []string
 	Group     string
+	Uuid      string
 }
 
 // WithTablePath allows to provide a path to a table file
@@ -78,7 +81,7 @@ func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, err
 		var records []map[string]string
 		groupId := userGroupIdentifier(group)
 		for _, user := range group {
-			records = append(records, map[string]string{"username": user, "group": groupId})
+			records = append(records, map[string]string{"username": user})
 		}
 		groups[groupId] = records
 	}
@@ -87,7 +90,7 @@ func NameGroupedRepositories(options ...GroupOption) (map[string]*GroupData, err
 }
 
 func userGroupIdentifier(group []string) string {
-	return strings.Join(group, "-")
+	return uuid.New().String()
 }
 
 // GroupAndNameRepositories groups students data and applies a naming pattern
@@ -152,9 +155,10 @@ func applyGroupingAndNaming(opts *GroupOptions, groups map[string][]map[string]s
 			return nil, err
 		}
 
-		groupDataMap[naming] = &GroupData{
+		groupDataMap[data.Uuid] = &GroupData{
 			Records:        records,
 			RepositoryName: cleanGitLabProjectName(naming),
+			Uuid:           data.Uuid,
 		}
 	}
 
@@ -166,21 +170,24 @@ func mapFromRecords(records []map[string]string, group string) TemplateData {
 	if group == "" {
 		group = "username"
 	}
+	groupUuid := uuid.New().String()
 
 	usernames := make([]string, len(records))
 	for i, record := range records {
 		usernames[i] = record[group]
 	}
-	return TemplateData{Usernames: usernames, Group: group}
+	return TemplateData{Usernames: usernames, Group: group, Uuid: groupUuid}
 }
 
 func applyDynamicTemplate(namingPattern string, data TemplateData) (string, error) {
 
 	tmpl, err := template.New("naming").Funcs(template.FuncMap{
-		"now":           Now,
-		"creation":      Creation,
-		"hash":          Hash,
-		"uuid":          Uuid,
+		"now":      Now,
+		"creation": Creation,
+		"hash":     Hash,
+		"uuid": func() string {
+			return Uuid(data.Uuid)
+		},
 		"autoincrement": Autoincrement,
 	}).Parse(namingPattern)
 	if err != nil {

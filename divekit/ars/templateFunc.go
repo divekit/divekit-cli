@@ -28,16 +28,19 @@ func Creation(format string) string {
 // If the input is empty, a new UUID is generated and used as input.
 func Hash(input string) string {
 	if input == "" {
-		input = Uuid()
+		input = Uuid("")
 	}
 	h := sha256.New()
 	h.Write([]byte(input))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Uuid generates a new uuid.
-func Uuid() string {
-	return uuid.New().String()
+// Uuid generates a new uuid if the input is empty.
+func Uuid(providedUuid string) string {
+	if providedUuid == "" {
+		return uuid.New().String()
+	}
+	return providedUuid
 }
 
 // autoIncrementCounter is a counter for autoincrementFunc
