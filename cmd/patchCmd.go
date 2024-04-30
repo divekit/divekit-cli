@@ -18,7 +18,6 @@ var (
 	DistributionNameFlag string
 	// command state vars
 	PatchFiles []string
-	ARSRepo    *ars.ARSRepoType
 	PatchRepo  *patch.PatchRepoType
 
 	patchCmd = &cobra.Command{
@@ -51,7 +50,7 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 
 // Checks preconditions before running the command
 func preRun(cmd *cobra.Command, args []string) {
-	ARSRepo = ars.NewARSRepo()
+	ars.Repo = ars.NewARSRepo()
 	PatchRepo = patch.NewPatchRepo()
 
 	distribution := origin.OriginRepo.GetDistribution(DistributionNameFlag)
@@ -69,7 +68,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	setRepositoryConfigWithinARSRepo()
 	copySavedIndividualizationFileToARS()
-	utils.RunNPMStartAlways(ARSRepo.RepoDir,
+	utils.RunNPMStartAlways(ars.Repo.RepoDir,
 		"Starting local generation of the individualized repositories containing patch files")
 
 	copyLocallyGeneratedFilesToPatchTool()
@@ -124,7 +123,7 @@ func setRepositoryConfigWithinARSRepo() {
 	repositoryConfigFile := distribution.RepositoryConfigFile
 	repositoryConfigFile.ReadContent()
 	repositoryConfigWithinARSRepo :=
-		repositoryConfigFile.CloneToDifferentLocation(ARSRepo.Config.RepositoryConfigFile.FilePath)
+		repositoryConfigFile.CloneToDifferentLocation(ars.Repo.Config.RepositoryConfigFile.FilePath)
 	repositoryConfigWithinARSRepo.Content.Local.SubsetPaths = PatchFiles
 	repositoryConfigWithinARSRepo.Content.IndividualRepositoryPersist.UseSavedIndividualRepositories = true
 
@@ -140,9 +139,9 @@ func setRepositoryConfigWithinARSRepo() {
 func copySavedIndividualizationFileToARS() {
 	log.Debug("subcmd.copySavedIndividualRepositoriesFileToARS()")
 	err := utils.CopyFile(origin.OriginRepo.DistributionMap[DistributionNameFlag].IndividualizationConfigFileName,
-		ARSRepo.IndividualizationConfig.Dir)
+		ars.Repo.IndividualizationConfig.Dir)
 	if err != nil {
-		log.Fatalf("Error copying individualization file to %s: %v", ARSRepo.IndividualizationConfig.Dir, err)
+		log.Fatalf("Error copying individualization file to %s: %v", ars.Repo.IndividualizationConfig.Dir, err)
 	}
 }
 
@@ -152,7 +151,7 @@ func copyLocallyGeneratedFilesToPatchTool() {
 	// Copy the generated files to the patch tool
 	err := PatchRepo.CleanInputDir()
 	if err == nil {
-		err = utils.CopyAllFilesInDir(ARSRepo.GeneratedLocalOutput.Dir, PatchRepo.InputDir)
+		err = utils.CopyAllFilesInDir(ars.Repo.GeneratedLocalOutput.Dir, PatchRepo.InputDir)
 	}
 	if err != nil {
 		log.Fatalf("Error copying locally generated files to patch tool: %v", err)

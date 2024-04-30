@@ -9,50 +9,71 @@ import (
 	"divekit-cli/utils"
 	"encoding/json"
 	"fmt"
-	"github.com/apex/log"
-	"io/ioutil"
 	"os"
+
+	"github.com/apex/log"
 )
 
 // struct for the repositoryConfig.json file
 type RepositoryConfigFileType struct {
-	FilePath string
-	Content  struct {
-		General struct {
-			LocalMode                     bool   `json:"localMode"`
-			CreateTestRepository          bool   `json:"createTestRepository"`
-			VariateRepositories           bool   `json:"variateRepositories"`
-			DeleteSolution                bool   `json:"deleteSolution"`
-			ActivateVariableValueWarnings bool   `json:"activateVariableValueWarnings"`
-			MaxConcurrentWorkers          int    `json:"maxConcurrentWorkers"`
-			GlobalLogLevel                string `json:"globalLogLevel"`
-		} `json:"general"`
-		Repository struct {
-			RepositoryName    string     `json:"repositoryName"`
-			RepositoryCount   int        `json:"repositoryCount"`
-			RepositoryMembers [][]string `json:"repositoryMembers"`
-		} `json:"repository"`
-		IndividualRepositoryPersist struct {
-			UseSavedIndividualRepositories      bool   `json:"useSavedIndividualRepositories"`
-			SavedIndividualRepositoriesFileName string `json:"savedIndividualRepositoriesFileName"`
-		} `json:"individualRepositoryPersist"`
-		Local struct {
-			OriginRepositoryFilePath string   `json:"originRepositoryFilePath"`
-			SubsetPaths              []string `json:"subsetPaths"`
-		} `json:"local"`
-		Remote struct {
-			OriginRepositoryId          int  `json:"originRepositoryId"`
-			CodeRepositoryTargetGroupId int  `json:"codeRepositoryTargetGroupId"`
-			TestRepositoryTargetGroupId int  `json:"testRepositoryTargetGroupId"`
-			DeleteExistingRepositories  bool `json:"deleteExistingRepositories"`
-			AddUsersAsGuests            bool `json:"addUsersAsGuests"`
-		} `json:"remote"`
-		Overview struct {
-			GenerateOverview     bool   `json:"generateOverview"`
-			OverviewRepositoryId int    `json:"overviewRepositoryId"`
-			OverviewFileName     string `json:"overviewFileName"`
-		} `json:"overview"`
-	}
+	FilePath string                      `json:"filePath"`
+	Content  RepositoryConfigContentType `json:"content"`
+}
+
+// repositoryConfig.json content
+type RepositoryConfigContentType struct {
+	General                     GeneralConfigType                     `json:"general"`
+	Repository                  RepositoryConfigType                  `json:"repository"`
+	IndividualRepositoryPersist IndividualRepositoryPersistConfigType `json:"individualRepositoryPersist"`
+	Local                       LocalConfigType                       `json:"local"`
+	Remote                      RemoteConfigType                      `json:"remote"`
+	Overview                    OverviewConfigType                    `json:"overview"`
+}
+
+// repositoryConfig.json $.general
+type GeneralConfigType struct {
+	LocalMode                     bool   `json:"localMode"`
+	CreateTestRepository          bool   `json:"createTestRepository"`
+	VariateRepositories           bool   `json:"variateRepositories"`
+	DeleteSolution                bool   `json:"deleteSolution"`
+	ActivateVariableValueWarnings bool   `json:"activateVariableValueWarnings"`
+	MaxConcurrentWorkers          int    `json:"maxConcurrentWorkers"`
+	GlobalLogLevel                string `json:"globalLogLevel"`
+}
+
+// repositoryConfig.json $.repository
+type RepositoryConfigType struct {
+	RepositoryName    string     `json:"repositoryName"`
+	RepositoryCount   int        `json:"repositoryCount"`
+	RepositoryMembers [][]string `json:"repositoryMembers"`
+}
+
+// repositoryConfig.json $.individualRepositoryPersist
+type IndividualRepositoryPersistConfigType struct {
+	UseSavedIndividualRepositories      bool   `json:"useSavedIndividualRepositories"`
+	SavedIndividualRepositoriesFileName string `json:"savedIndividualRepositoriesFileName"`
+}
+
+// repositoryConfig.json $.local
+type LocalConfigType struct {
+	OriginRepositoryFilePath string   `json:"originRepositoryFilePath"`
+	SubsetPaths              []string `json:"subsetPaths"`
+}
+
+// repositoryConfig.json $.remote
+type RemoteConfigType struct {
+	OriginRepositoryId          int  `json:"originRepositoryId"`
+	CodeRepositoryTargetGroupId int  `json:"codeRepositoryTargetGroupId"`
+	TestRepositoryTargetGroupId int  `json:"testRepositoryTargetGroupId"`
+	DeleteExistingRepositories  bool `json:"deleteExistingRepositories"`
+	AddUsersAsGuests            bool `json:"addUsersAsGuests"`
+}
+
+// repositoryConfig.json $.overview
+type OverviewConfigType struct {
+	GenerateOverview     bool   `json:"generateOverview"`
+	OverviewRepositoryId int    `json:"overviewRepositoryId"`
+	OverviewFileName     string `json:"overviewFileName"`
 }
 
 // This method is similar to a constructor in OOP
@@ -85,7 +106,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
-	err = ioutil.WriteFile(repositoryConfigFile.FilePath, updatedConfig, 0644)
+	err = os.WriteFile(repositoryConfigFile.FilePath, updatedConfig, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write updated config file: %v", err)
 	}

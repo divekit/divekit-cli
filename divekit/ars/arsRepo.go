@@ -7,8 +7,9 @@ package ars
 import (
 	"divekit-cli/divekit"
 	"divekit-cli/utils"
-	"github.com/apex/log"
 	"path/filepath"
+
+	"github.com/apex/log"
 )
 
 // all the paths used in the ARS repository (all as full paths)

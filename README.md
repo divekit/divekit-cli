@@ -110,7 +110,9 @@ milestone repos. See [divekit-repo-editor](https://github.com/divekit/divekit-re
 
 
 
-## INTERNAL - Development of the "patch" subcommand - how to test
+## INTERNAL 
+
+### Development of the "patch" subcommand - how to test
 
 (this is just temporary during development, will be removed later)
 
@@ -119,3 +121,55 @@ As test data, I have used the following origin repo:
   - In the .divekit_norepo, the necessary files have been added
   - There are two test files, one open and one hidden (test repo only). I have added a useless (but not
     confusing) individualized comment on top of the first test in each test file.
+  
+### Development of the "setup" subcommand
+
+#### current state 
+
+The setup command is not yet fully implemented. 
+
+The current setup command can only put out names for the new repos based on the given `repositoryConfig.json` in the origin repo under `.divekit_norepo/distributions/*`.
+
+This command puts out the names of the new repos based on the given `repositoryConfig.json` in the origin repo under `.divekit_norepo/distributions/test`.
+
+```golang
+go run main.go setup -m "C:\...\staff\divekit-modules" -o "\..\origins\test-origin-1" --details --dry-run --distribution "test"
+```
+
+For real creation of the new repos, the command should look like this:
+```golang
+go run main.go setup -m "C:\...\staff\divekit-modules" -o "\..\origins\test-origin-1" --details --distribution "test" -t "glpat-{rest_of_token}" -remote "https://git.archi-lab.io/"
+```
+
+#### Problems
+- Reading the Config from the "milestone" distribution isn't working (idk why)
+
+#### DEPRECATED
+
+##### using data from a csv file for the setup command - can maybe used for a wizard-like command?
+
+For now, I only implemented what I already had. The code will be adapted to the given conditions in the next few days.
+
+As test data, I have used the following csv table contents (I called it "students.csv"):
+```csv
+firstname,lastname,email,group
+ada,lovelace,ada@example.com,GRP-A
+grace,hopper,grace@example.com,GRP-B
+alan,turing,alan@example.com,GRP-A
+```
+
+the command to run the setup command is:
+```batch
+go run main.go setup --naming 'praktikum-S{{now "2006"}}-{{.group}}-{{uuid}}-{{autoincrement}}' --dry-run --details --table "path/to/students.csv" --group-by "group"
+```
+
+to compile (on windows)
+```batch
+go build -o divekit.exe . 
+```
+
+or in the compiled version:
+```batch
+./divekit setup --naming 'praktikum-S{{now "2006"}}-{{.group}}-{{uuid}}-{{autoincrement}}' --dry-run --details --table "path/to/students.csv" --group-by "group"
+```
+
