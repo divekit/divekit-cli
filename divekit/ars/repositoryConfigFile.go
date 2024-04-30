@@ -9,7 +9,6 @@ import (
 	"divekit-cli/utils"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/apex/log"
@@ -107,7 +106,7 @@ func (repositoryConfigFile *RepositoryConfigFileType) WriteContent() error {
 		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
-	err = ioutil.WriteFile(repositoryConfigFile.FilePath, updatedConfig, 0644)
+	err = os.WriteFile(repositoryConfigFile.FilePath, updatedConfig, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write updated config file: %v", err)
 	}

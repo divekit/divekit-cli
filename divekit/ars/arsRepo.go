@@ -35,7 +35,7 @@ type ARSRepoType struct {
 func NewARSRepo() *ARSRepoType {
 	log.Debug("ars.NewARSRepo()")
 	arsRepo := &ARSRepoType{}
-	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup") // TODO: this should probably look in the origin repo first
+	arsRepo.RepoDir = filepath.Join(divekit.DivekitHomeDir, "divekit-automated-repo-setup")
 	arsRepo.Config.Dir = filepath.Join(arsRepo.RepoDir, "resources/config")
 	arsRepo.Config.RepositoryConfigFile =
 		NewRepositoryConfigFile(filepath.Join(arsRepo.Config.Dir, "repositoryConfig.json"))
